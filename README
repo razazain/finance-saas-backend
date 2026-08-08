@@ -1,0 +1,442 @@
+# Finance SaaS Backend
+
+A secure, multi-tenant financial management backend for small businesses.
+
+The application is designed to help small businesses track their income, expenses, cash flow, and financial documents. Users will be able to manually record transactions or upload invoices and receipts, which can be processed using AI to extract financial information and suggest transaction categories.
+
+## Project Status
+
+🚧 **Currently in development**
+
+This project is being developed incrementally, starting with the backend foundation, authentication, multi-tenancy, and transaction management.
+
+---
+
+## Core Features
+
+### Authentication & Security
+
+* User registration and login
+* Secure password hashing with `bcryptjs`
+* JWT-based authentication
+* Access and refresh token architecture
+* Role-based authorization
+* Request validation
+* Rate limiting
+* Security headers
+* Multi-tenant data isolation
+
+### Financial Management
+
+* Income management
+* Expense management
+* Transaction categories
+* Cash flow tracking
+* Account/balance tracking
+* Transaction history
+* Search and filtering
+* Pagination
+
+### AI-Powered Document Processing
+
+* Upload invoices and receipts
+* PDF and image processing
+* AI-based data extraction
+* Automatic income/expense detection
+* Automatic category suggestions
+* Transaction draft generation
+* User review and confirmation before saving
+
+### Reports & Analytics
+
+* Income reports
+* Expense reports
+* Cash flow reports
+* Category-based expense analysis
+* Monthly financial summaries
+* Dashboard statistics
+
+---
+
+## Technology Stack
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+
+### Authentication & Security
+
+* JWT
+* bcryptjs
+* Helmet
+* CORS
+* express-rate-limit
+* Zod
+
+### Planned Infrastructure
+
+* Redis
+* Background job queue
+* Object/file storage
+* AI API
+* Nginx
+* Cloudflare
+
+---
+
+## Architecture
+
+The application follows a layered backend architecture:
+
+```text
+Client / PHP Frontend
+        │
+        │ HTTPS
+        ▼
+   Node.js + Express
+        │
+        ├── Routes
+        │
+        ├── Controllers
+        │
+        ├── Services
+        │
+        ├── Validators
+        │
+        ├── Middleware
+        │
+        └── Models
+        │
+        ▼
+     MongoDB
+```
+
+AI document processing will eventually use an asynchronous workflow:
+
+```text
+PDF / Image
+     │
+     ▼
+Document Storage
+     │
+     ▼
+AI Processing
+     │
+     ▼
+Extracted Data
+     │
+     ▼
+Validation
+     │
+     ▼
+Transaction Draft
+     │
+     ▼
+User Confirmation
+     │
+     ▼
+Transaction
+```
+
+AI-generated information will **never be treated as automatically trusted financial data**.
+
+---
+
+## Multi-Tenant Architecture
+
+The application is designed as a multi-tenant SaaS.
+
+A business owns its financial data:
+
+```text
+Business
+│
+├── Users
+├── Categories
+├── Transactions
+├── Documents
+├── Customers
+├── Suppliers
+└── Reports
+```
+
+Business-owned resources will contain a `businessId`.
+
+Example:
+
+```js
+{
+    businessId: "...",
+    type: "expense",
+    amount: 15000,
+    categoryId: "...",
+    date: "2026-08-08"
+}
+```
+
+The authenticated user's `businessId` will be used to scope database queries.
+
+The client will not be trusted to provide or modify the tenant identity.
+
+---
+
+## Security Principles
+
+Security is a core part of the architecture.
+
+The backend will follow these principles:
+
+1. Never trust client-provided tenant IDs.
+2. Validate every API request.
+3. Verify authorization on every protected resource.
+4. Never expose MongoDB directly to the internet.
+5. Never store plaintext passwords.
+6. Never store secrets in source control.
+7. Never trust uploaded files.
+8. Never trust AI-generated financial data without validation.
+9. Keep sensitive documents in private storage.
+10. Maintain audit logs for important financial actions.
+11. Apply rate limiting to sensitive endpoints.
+12. Avoid permanently deleting important financial records where an audit-friendly alternative is appropriate.
+
+---
+
+## Project Structure
+
+The planned backend structure:
+
+```text
+src/
+│
+├── config/
+│   ├── database.js
+│   └── env.js
+│
+├── controllers/
+│
+├── middleware/
+│
+├── models/
+│
+├── routes/
+│
+├── services/
+│
+├── validators/
+│
+├── utils/
+│
+├── app.js
+└── server.js
+```
+
+The main request flow will follow:
+
+```text
+Route
+  ↓
+Middleware
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Model
+  ↓
+MongoDB
+```
+
+Business logic should primarily live inside services rather than becoming tightly coupled to controllers.
+
+---
+
+## Environment Variables
+
+Create a `.env` file locally.
+
+Example:
+
+```env
+NODE_ENV=development
+PORT=5000
+
+MONGO_URI=
+
+JWT_ACCESS_SECRET=
+JWT_REFRESH_SECRET=
+
+CLIENT_URL=
+```
+
+Never commit the real `.env` file to Git.
+
+Use `.env.example` to document required environment variables.
+
+---
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+```
+
+Navigate into the project:
+
+```bash
+cd finance-saas-backend
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create your environment file:
+
+```bash
+cp .env.example .env
+```
+
+Configure the required environment variables.
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+---
+
+## Development
+
+The project uses `nodemon` for development.
+
+Example `package.json` scripts:
+
+```json
+{
+    "scripts": {
+        "dev": "nodemon src/server.js",
+        "start": "node src/server.js"
+    }
+}
+```
+
+---
+
+## API Versioning
+
+The API will use versioning from the beginning:
+
+```text
+/api/v1
+```
+
+Example:
+
+```text
+/api/v1/auth/register
+/api/v1/auth/login
+/api/v1/transactions
+/api/v1/categories
+```
+
+This allows future API versions to be introduced without immediately breaking existing clients.
+
+---
+
+## Planned API Modules
+
+```text
+/api/v1/auth
+/api/v1/users
+/api/v1/businesses
+/api/v1/categories
+/api/v1/transactions
+/api/v1/documents
+/api/v1/reports
+/api/v1/ai
+```
+
+Additional modules may be introduced as the product evolves.
+
+---
+
+## AI Transaction Workflow
+
+The AI feature is designed to assist users rather than make unverified financial decisions.
+
+Example:
+
+```text
+User uploads invoice
+        ↓
+File validation
+        ↓
+Private storage
+        ↓
+AI extraction
+        ↓
+Schema validation
+        ↓
+Business-rule validation
+        ↓
+Transaction draft
+        ↓
+User reviews information
+        ↓
+User confirms
+        ↓
+Transaction saved
+```
+
+The user should be able to correct:
+
+* Amount
+* Date
+* Vendor/customer
+* Category
+* Transaction type
+* Description
+* Currency
+
+before the transaction becomes an official financial record.
+
+---
+
+## Future SaaS Features
+
+Potential future modules include:
+
+* Customer management
+* Supplier management
+* Invoice generation
+* Payment tracking
+* Accounts/wallets
+* Recurring transactions
+* Inventory management
+* Tax reporting
+* Financial notifications
+* AI financial summaries
+* Business insights
+* Subscription/billing system
+* Team management
+* Audit logs
+* Export to CSV/PDF
+
+---
+
+## License
+
+This project is currently a private development project.
+
+License information will be added when the project is ready for public release.
+
+```
+```
