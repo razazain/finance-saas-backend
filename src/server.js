@@ -17,10 +17,9 @@ const startServer = async () => {
         console.log(
           `🌍 Environment: ${env.NODE_ENV}`
         );
-
-        console.log(
-          `🔗 API: http://localhost:${env.PORT}/api/v1`
-        );
+        // console.log(
+        //   `🔗 API: http://localhost:${env.PORT}/api/v1`
+        // );
       }
     );
 

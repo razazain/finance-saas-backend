@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const registerSchema = z.object({
+const registerBodySchema = z.object({
   name: z
     .string()
     .trim()
@@ -39,7 +39,11 @@ export const registerSchema = z.object({
     .default("PKR")
 });
 
-export const loginSchema = z.object({
+export const registerSchema = z.object({
+  body: registerBodySchema
+});
+
+const loginBodySchema = z.object({
   email: z
     .string()
     .trim()
@@ -51,4 +55,8 @@ export const loginSchema = z.object({
     .string()
     .min(1, "Password is required")
     .max(72)
+});
+
+export const loginSchema = z.object({
+  body: loginBodySchema
 });

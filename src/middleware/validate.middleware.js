@@ -19,7 +19,8 @@ export const validate = (schema) => {
         new AppError(
           "Validation failed",
           400,
-          "VALIDATION_ERROR"
+          "VALIDATION_ERROR",
+          formattedErrors
         )
       );
     }

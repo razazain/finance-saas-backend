@@ -35,6 +35,7 @@ export const errorMiddleware = (
     success: false,
     code,
     message,
+    ...(error.details && { details: error.details }),
     ...(env.NODE_ENV === "development" && {
       stack: error.stack
     })
