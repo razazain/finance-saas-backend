@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-
+import cookieParser from "cookie-parser";
 import { env } from "./config/env.js";
 
 import authRoutes from "./routes/auth.routes.js";
@@ -11,6 +11,7 @@ import businessRoutes from "./routes/business.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
+app.use(cookieParser());
 
 /*
  * Security headers

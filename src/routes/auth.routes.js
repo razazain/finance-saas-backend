@@ -2,7 +2,9 @@ import express from "express";
 
 import {
   register,
-  login
+  login,
+  refresh,
+  logout
 } from "../controllers/auth.contoller.js";
 
 import {
@@ -14,7 +16,8 @@ import {
   loginSchema
 } from "../validators/auth.validator.js";
 
-const router = express.Router();
+const router =
+  express.Router();
 
 router.post(
   "/register",
@@ -26,6 +29,16 @@ router.post(
   "/login",
   validate(loginSchema),
   login
+);
+
+router.post(
+  "/refresh",
+  refresh
+);
+
+router.post(
+  "/logout",
+  logout
 );
 
 export default router;

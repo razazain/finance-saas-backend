@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+
 import { env } from "../config/env.js";
 
 export const generateAccessToken = (payload) => {
@@ -6,7 +8,9 @@ export const generateAccessToken = (payload) => {
     payload,
     env.JWT_ACCESS_SECRET,
     {
-      expiresIn: env.JWT_ACCESS_EXPIRES_IN
+      expiresIn: env.JWT_ACCESS_EXPIRES_IN,
+      issuer: "finance-saas-api",
+      audience: "finance-saas-client"
     }
   );
 };
@@ -16,7 +20,9 @@ export const generateRefreshToken = (payload) => {
     payload,
     env.JWT_REFRESH_SECRET,
     {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+      issuer: "finance-saas-api",
+      audience: "finance-saas-client"
     }
   );
 };
@@ -24,13 +30,28 @@ export const generateRefreshToken = (payload) => {
 export const verifyAccessToken = (token) => {
   return jwt.verify(
     token,
-    env.JWT_ACCESS_SECRET
+    env.JWT_ACCESS_SECRET,
+    {
+      issuer: "finance-saas-api",
+      audience: "finance-saas-client"
+    }
   );
 };
 
 export const verifyRefreshToken = (token) => {
   return jwt.verify(
     token,
-    env.JWT_REFRESH_SECRET
+    env.JWT_REFRESH_SECRET,
+    {
+      issuer: "finance-saas-api",
+      audience: "finance-saas-client"
+    }
   );
+};
+
+export const generateTokenHash = (token) => {
+  return crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 };
