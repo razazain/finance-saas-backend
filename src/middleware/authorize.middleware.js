@@ -13,9 +13,7 @@ export const authorize = (...allowedRoles) => {
     }
 
     if (
-      !allowedRoles.includes(
-        req.user.role
-      )
+      !allowedRoles.includes(req.user.role)
     ) {
       return next(
         new AppError(

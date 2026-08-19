@@ -1,19 +1,12 @@
-import User from "../models/User.js";
 import { AppError } from "../utils/appError.js";
-import {
-  verifyAccessToken
-} from "../utils/jwt.js";
+import { verifyAccessToken } from "../utils/jwt.js";
+import User from "../models/User.js";
 
-export const authenticate = async (
-  req,
-  res,
-  next
-) => {
+export const authenticate = async (req, res, next) => {
   try {
-    const authorization =
-      req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-    if (!authorization) {
+    if (!authHeader) {
       throw new AppError(
         "Authentication required",
         401,
@@ -21,27 +14,50 @@ export const authenticate = async (
       );
     }
 
-    const [scheme, token] =
-      authorization.split(" ");
+    const [scheme, token] = authHeader.split(" ");
 
     if (
       scheme !== "Bearer" ||
       !token
     ) {
       throw new AppError(
-        "Invalid authorization header",
+        "Invalid authorization header format",
         401,
-        "INVALID_AUTH_HEADER"
+        "INVALID_AUTHORIZATION_HEADER"
       );
     }
 
-    const decoded =
-      verifyAccessToken(token);
+    let decoded;
 
+    try {
+      decoded = verifyAccessToken(token);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        throw new AppError(
+          "Access token has expired",
+          401,
+          "ACCESS_TOKEN_EXPIRED"
+        );
+      }
+
+      throw new AppError(
+        "Invalid access token",
+        401,
+        "INVALID_ACCESS_TOKEN"
+      );
+    }
+
+    /*
+     * Fetch the current user from DB.
+     *
+     * This allows us to detect if the user
+     * has been deactivated after the JWT
+     * was issued.
+     */
     const user = await User.findById(
       decoded.userId
     ).select(
-      "_id businessId name email role isActive"
+      "_id businessId role isActive"
     );
 
     if (!user) {
@@ -60,29 +76,21 @@ export const authenticate = async (
       );
     }
 
+    /*
+     * Never trust businessId or role
+     * from the request body.
+     *
+     * These values come from the
+     * authenticated user.
+     */
     req.user = {
       userId: user._id.toString(),
       businessId: user.businessId.toString(),
-      name: user.name,
-      email: user.email,
       role: user.role
     };
 
     next();
   } catch (error) {
-    if (
-      error.name === "JsonWebTokenError" ||
-      error.name === "TokenExpiredError"
-    ) {
-      return next(
-        new AppError(
-          "Invalid or expired access token",
-          401,
-          "INVALID_ACCESS_TOKEN"
-        )
-      );
-    }
-
     next(error);
   }
 };
