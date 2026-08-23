@@ -22,7 +22,8 @@ const userSchema = new mongoose.Schema(
       required: true,
       lowercase: true,
       trim: true,
-      maxlength: 254
+      maxlength: 254,
+      unique: true
     },
 
     password: {
@@ -53,16 +54,6 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true
-  }
-);
-
-userSchema.index(
-  {
-    businessId: 1,
-    email: 1
-  },
-  {
-    unique: true
   }
 );
 

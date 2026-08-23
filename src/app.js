@@ -7,6 +7,7 @@ import { env } from "./config/env.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import businessRoutes from "./routes/business.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
@@ -97,6 +98,11 @@ app.use(
 app.use(
   "/api/v1/businesses",
   businessRoutes
+);
+
+app.use(
+  "/api/v1/users",
+  userRoutes
 );
 
 /*
