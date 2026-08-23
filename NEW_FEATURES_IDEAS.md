@@ -1,0 +1,2 @@
+- track debit and credit bill with one customer how much balance on customer and delivery has done complete full ledger between vendor and customer.
+- reccurence tracking for bill every 6,7,10,15,16,30,45,90,365 days and so on.

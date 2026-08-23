@@ -8,6 +8,8 @@ import {
   authorize
 } from "../middleware/authorize.middleware.js";
 
+import { getBusinessProfile } from "../controllers/bussiness.controller.js";
+
 const router = express.Router();
 
 router.get(
@@ -29,7 +31,7 @@ router.get(
   "/me",
   authenticate,
   authorize("owner", "admin", "employee"),
-  //getMyBusiness
+  getBusinessProfile
 );
 
 export default router;
