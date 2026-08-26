@@ -8,29 +8,22 @@ import { env } from "./config/env.js";
 import authRoutes from "./routes/auth.routes.js";
 import businessRoutes from "./routes/business.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
+import accountRoutes from "./routes/account.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
 app.use(cookieParser());
+app.use(helmet());
 
-/*
- * Security headers
- */
-app.use(
-  helmet()
-);
 
-/*
- * CORS
- */
 app.use(
   cors({
     origin: env.CLIENT_URL,
     credentials: true
   })
 );
-
 /*
  * General rate limiting
  */
@@ -73,9 +66,6 @@ app.use(
   })
 );
 
-/*
- * Health check
- */
 app.get(
   "/health",
   (req, res) => {
@@ -87,23 +77,19 @@ app.get(
   }
 );
 
+
+
 /*
  * API routes
  */
-app.use(
-  "/api/v1/auth",
-  authRoutes
-);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/businesses", businessRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/accounts", accountRoutes);
+ 
 
-app.use(
-  "/api/v1/businesses",
-  businessRoutes
-);
 
-app.use(
-  "/api/v1/users",
-  userRoutes
-);
 
 /*
  * 404 handler
