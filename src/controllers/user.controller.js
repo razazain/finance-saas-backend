@@ -117,7 +117,7 @@ export const updateStatus =
           req.user,
 
         isActive:
-          req.body.isActive
+          req.validated.body.isActive
       });
 
     return successResponse({

@@ -12,10 +12,11 @@ import {
 import {
   asyncHandler
 } from "../utils/asyncHandler.js";
+import { env } from "../config/env.js";
 
 const refreshCookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: env.NODE_ENV === "production",
   sameSite: "strict",
   path: "/api/v1/auth",
   maxAge:
@@ -135,7 +136,7 @@ export const logout =
       {
         httpOnly: true,
         secure:
-          process.env.NODE_ENV ===
+          env.NODE_ENV ===
           "production",
         sameSite: "strict",
         path: "/api/v1/auth"

@@ -7,7 +7,12 @@ export const errorMiddleware = (
   res,
   next
 ) => {
-  console.error(error);
+  if (env.NODE_ENV === "development") {
+    console.error(error);
+  } else {
+    // Minimize sensitive output in production logs
+    console.error(`Error: ${error.message} (${error.code || error.statusCode || "ERR"})`);
+  }
 
   let statusCode = error.statusCode || 500;
   let message = error.message || "Internal server error";

@@ -11,6 +11,8 @@ import {
   verifyRefreshToken
 } from "../utils/jwt.js";
 
+import { env } from "../config/env.js";
+
 import { AppError } from "../utils/appError.js";
 
 const SALT_ROUNDS = 12;
@@ -454,21 +456,43 @@ const storeRefreshToken = async ({
 
 const getRefreshTokenExpiry = () => {
   /*
-   * Current configuration is 7 days.
-   *
-   * This can be improved later to
-   * parse JWT_REFRESH_EXPIRES_IN
-   * dynamically.
+   * Derive expiry from JWT_REFRESH_EXPIRES_IN.
+   * Supported formats: number + unit where unit is
+   * s (seconds), m (minutes), h (hours), d (days), w (weeks).
+   * Examples: "15m", "7d"
    */
 
-  const days = 7;
+  const parseDurationMs = (str) => {
+    if (!str || typeof str !== "string") return null;
 
-  return new Date(
-    Date.now() +
-      days *
-        24 *
-        60 *
-        60 *
-        1000
+    const m = str.match(/^([0-9]+)([smhdw])$/i);
+
+    if (!m) return null;
+
+    const val = Number(m[1]);
+    const unit = m[2].toLowerCase();
+
+    switch (unit) {
+      case "s":
+        return val * 1000;
+      case "m":
+        return val * 60 * 1000;
+      case "h":
+        return val * 60 * 60 * 1000;
+      case "d":
+        return val * 24 * 60 * 60 * 1000;
+      case "w":
+        return val * 7 * 24 * 60 * 60 * 1000;
+      default:
+        return null;
+    }
+  };
+
+  const ms = parseDurationMs(
+    env.JWT_REFRESH_EXPIRES_IN
   );
+
+  const fallback = 7 * 24 * 60 * 60 * 1000;
+
+  return new Date(Date.now() + (ms || fallback));
 };

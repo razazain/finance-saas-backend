@@ -25,7 +25,7 @@ const refreshTokenSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      index: true
+      
     },
 
     revokedAt: {
@@ -53,6 +53,7 @@ const refreshTokenSchema = new mongoose.Schema(
  * refresh-token records.
  */
 refreshTokenSchema.index(
+  { expiresAt: 1 },
   { expireAfterSeconds: 0 }
 );
 
