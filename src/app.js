@@ -10,6 +10,7 @@ import businessRoutes from "./routes/business.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import accountRoutes from "./routes/account.routes.js";
+import transactionRoutes from "./routes/transaction.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
@@ -87,6 +88,7 @@ app.use("/api/v1/businesses", businessRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/accounts", accountRoutes);
+app.use("/api/v1/transactions", transactionRoutes);
  
 
 

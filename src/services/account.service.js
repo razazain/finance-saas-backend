@@ -46,7 +46,6 @@ export const createAccount = async ({
   }
 
   const accountCurrency =
-    currency ||
     business.currency;
 
   const opening =
