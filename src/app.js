@@ -11,6 +11,9 @@ import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import accountRoutes from "./routes/account.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import partyRoutes from "./routes/party.routes.js";
+import invoiceRoutes from "./routes/invoice.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
@@ -89,9 +92,9 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/accounts", accountRoutes);
 app.use("/api/v1/transactions", transactionRoutes);
- 
-
-
+app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/parties", partyRoutes);
+app.use("/api/v1/invoices", invoiceRoutes);
 
 /*
  * 404 handler

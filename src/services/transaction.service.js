@@ -158,10 +158,6 @@ export const createTransaction =
              * Expense:
              * balance - amount
              */
-            const balanceOperator =
-              type === "income"
-                ? "$inc"
-                : "$inc";
 
             const balanceChange =
               type === "income"
