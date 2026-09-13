@@ -17,6 +17,7 @@ import invoiceRoutes from "./routes/invoice.routes.js";
 import invoicePaymentRoutes from "./routes/invoicePayment.routes.js";
 import billRoutes from "./routes/bill.routes.js";
 import billPaymentRoutes from "./routes/billPayment.routes.js";
+import ledgerRoutes from "./routes/ledger.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
@@ -101,7 +102,7 @@ app.use("/api/v1/invoices", invoiceRoutes);
 app.use("/api/v1", invoicePaymentRoutes);
 app.use("/api/v1/bills", billRoutes);
 app.use("/api/v1", billPaymentRoutes);
-
+app.use("/api/v1", ledgerRoutes);
 
 
 
