@@ -2,9 +2,12 @@ import app from "./app.js";
 
 import { env } from "./config/env.js";
 import { connectDatabase } from "./config/database.js";
+import { startRecurringTransactionWorker } from "./jobs/recurringTransaction.worker.js";
 
 const startServer = async () => {
   await connectDatabase();
+
+  const stopRecurringWorker = startRecurringTransactionWorker();
 
   const server =
     app.listen(
@@ -32,6 +35,8 @@ const startServer = async () => {
     console.log(
       `${signal} received. Shutting down gracefully...`
     );
+
+    stopRecurringWorker();
 
     server.close(() => {
       console.log(

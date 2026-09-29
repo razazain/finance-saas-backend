@@ -7,784 +7,560 @@ import Category from "../models/Category.js";
 import Business from "../models/Bussiness.js";
 import Transaction from "../models/Transaction.js";
 
-import {
-  AppError
-} from "../utils/appError.js";
+import { AppError } from "../utils/appError.js";
 
 Decimal.set({
   precision: 40,
-  rounding:
-    Decimal.ROUND_HALF_UP
+  rounding: Decimal.ROUND_HALF_UP,
 });
 
 /*
  * Decimal128 helper.
  */
-const toDecimal128 =
-  (value) => {
-    return mongoose.Types.Decimal128
-      .fromString(
-        new Decimal(value)
-          .toFixed(4)
-      );
-  };
+const toDecimal128 = (value) => {
+  return mongoose.Types.Decimal128.fromString(new Decimal(value).toFixed(4));
+};
 
 /*
  * Decimal128 response helper.
  */
-const decimalToString =
-  (value) => {
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return "0.0000";
-    }
+const decimalToString = (value) => {
+  if (value === null || value === undefined) {
+    return "0.0000";
+  }
 
-    return value.toString();
-  };
+  return value.toString();
+};
 
 /*
  * Format recurring transaction.
  */
-const formatRecurring =
-  (item) => {
-    const object =
-      item.toObject
-        ? item.toObject()
-        : item;
+const formatRecurring = (item) => {
+  const object = item.toObject ? item.toObject() : item;
 
-    return {
-      ...object,
+  return {
+    ...object,
 
-      amount:
-        decimalToString(
-          object.amount
-        )
-    };
+    amount: decimalToString(object.amount),
   };
+};
 
 /*
  * Calculate next execution date.
  */
-const calculateNextRun =
-  ({
-    currentDate,
-    frequency,
-    intervalDays
-  }) => {
-    const next =
-      new Date(
-        currentDate
-      );
+const calculateNextRun = ({ currentDate, frequency, intervalDays }) => {
+  const next = new Date(currentDate);
 
-    switch (
-      frequency
-    ) {
-      case "daily":
-        next.setDate(
-          next.getDate() + 1
-        );
-        break;
+  switch (frequency) {
+    case "daily":
+      next.setDate(next.getDate() + 1);
+      break;
 
-      case "weekly":
-        next.setDate(
-          next.getDate() + 7
-        );
-        break;
+    case "weekly":
+      next.setDate(next.getDate() + 7);
+      break;
 
-      case "monthly":
-        next.setMonth(
-          next.getMonth() + 1
-        );
-        break;
+    case "monthly":
+      next.setMonth(next.getMonth() + 1);
+      break;
 
-      case "yearly":
-        next.setFullYear(
-          next.getFullYear() + 1
-        );
-        break;
+    case "yearly":
+      next.setFullYear(next.getFullYear() + 1);
+      break;
 
-      case "custom":
-        if (
-          !intervalDays
-        ) {
-          throw new AppError(
-            "intervalDays is required for custom frequency",
-            400,
-            "INTERVAL_DAYS_REQUIRED"
-          );
-        }
-
-        next.setDate(
-          next.getDate() +
-            intervalDays
-        );
-        break;
-
-      default:
+    case "custom":
+      if (!intervalDays) {
         throw new AppError(
-          "Invalid recurring frequency",
+          "intervalDays is required for custom frequency",
           400,
-          "INVALID_RECURRING_FREQUENCY"
+          "INTERVAL_DAYS_REQUIRED",
         );
-    }
+      }
 
-    return next;
-  };
+      next.setDate(next.getDate() + intervalDays);
+      break;
+
+    default:
+      throw new AppError(
+        "Invalid recurring frequency",
+        400,
+        "INVALID_RECURRING_FREQUENCY",
+      );
+  }
+
+  return next;
+};
 
 /*
  * Validate frequency settings.
  */
-const validateFrequency =
-  ({
-    frequency,
-    intervalDays
-  }) => {
-    if (
-      frequency ===
-        "custom" &&
-      !intervalDays
-    ) {
-      throw new AppError(
-        "intervalDays is required for custom frequency",
-        400,
-        "INTERVAL_DAYS_REQUIRED"
-      );
-    }
+const validateFrequency = ({ frequency, intervalDays }) => {
+  if (frequency === "custom" && !intervalDays) {
+    throw new AppError(
+      "intervalDays is required for custom frequency",
+      400,
+      "INTERVAL_DAYS_REQUIRED",
+    );
+  }
 
-    if (
-      frequency !==
-        "custom" &&
-      intervalDays !==
-        undefined &&
-      intervalDays !==
-        null
-    ) {
-      throw new AppError(
-        "intervalDays can only be used with custom frequency",
-        400,
-        "INVALID_INTERVAL_DAYS"
-      );
-    }
-  };
+  if (
+    frequency !== "custom" &&
+    intervalDays !== undefined &&
+    intervalDays !== null
+  ) {
+    throw new AppError(
+      "intervalDays can only be used with custom frequency",
+      400,
+      "INVALID_INTERVAL_DAYS",
+    );
+  }
+};
 
 /*
  * Validate dates.
  */
-const validateDates =
-  ({
-    startDate,
-    endDate
-  }) => {
-    const start =
-      new Date(
-        startDate
-      );
+const validateDates = ({ startDate, endDate }) => {
+  const start = new Date(startDate);
 
-    if (
-      Number.isNaN(
-        start.getTime()
-      )
-    ) {
+  if (Number.isNaN(start.getTime())) {
+    throw new AppError("Invalid start date", 400, "INVALID_START_DATE");
+  }
+
+  let end = null;
+
+  if (endDate) {
+    end = new Date(endDate);
+
+    if (Number.isNaN(end.getTime())) {
+      throw new AppError("Invalid end date", 400, "INVALID_END_DATE");
+    }
+
+    if (end < start) {
       throw new AppError(
-        "Invalid start date",
+        "End date cannot be before start date",
         400,
-        "INVALID_START_DATE"
+        "INVALID_DATE_RANGE",
       );
     }
+  }
 
-    let end = null;
-
-    if (endDate) {
-      end =
-        new Date(
-          endDate
-        );
-
-      if (
-        Number.isNaN(
-          end.getTime()
-        )
-      ) {
-        throw new AppError(
-          "Invalid end date",
-          400,
-          "INVALID_END_DATE"
-        );
-      }
-
-      if (
-        end < start
-      ) {
-        throw new AppError(
-          "End date cannot be before start date",
-          400,
-          "INVALID_DATE_RANGE"
-        );
-      }
-    }
-
-    return {
-      start,
-      end
-    };
+  return {
+    start,
+    end,
   };
+};
 
 /*
  * Validate account and category.
  */
-const validateTransactionSetup =
-  async ({
-    session,
-    business,
+const validateTransactionSetup = async ({
+  session,
+  business,
+  businessId,
+  type,
+  accountId,
+  categoryId,
+  destinationAccountId,
+}) => {
+  /*
+   * Source account.
+   */
+  const account = await Account.findOne({
+    _id: accountId,
     businessId,
-    type,
-    accountId,
-    categoryId,
-    destinationAccountId
-  }) => {
-    /*
-     * Source account.
-     */
-    const account =
-      await Account.findOne({
-        _id: accountId,
-        businessId,
-        isActive: true
-      }).session(session);
+    isActive: true,
+  }).session(session);
 
-    if (!account) {
-      throw new AppError(
-        "Account not found or inactive",
-        404,
-        "ACCOUNT_NOT_FOUND"
-      );
-    }
-
-    if (
-      account.currency !==
-      business.currency
-    ) {
-      throw new AppError(
-        "Account currency does not match business currency",
-        400,
-        "ACCOUNT_CURRENCY_MISMATCH"
-      );
-    }
-
-    let category = null;
-    let destinationAccount =
-      null;
-
-    /*
-     * Income / expense.
-     */
-    if (
-      type === "income" ||
-      type === "expense"
-    ) {
-      if (!categoryId) {
-        throw new AppError(
-          "Category is required",
-          400,
-          "CATEGORY_REQUIRED"
-        );
-      }
-
-      category =
-        await Category.findOne({
-          _id: categoryId,
-          businessId,
-          isActive: true
-        }).session(session);
-
-      if (!category) {
-        throw new AppError(
-          "Category not found or inactive",
-          404,
-          "CATEGORY_NOT_FOUND"
-        );
-      }
-
-      if (
-        category.type !==
-        type
-      ) {
-        throw new AppError(
-          `Category type must be ${type}`,
-          400,
-          "CATEGORY_TYPE_MISMATCH"
-        );
-      }
-
-      return {
-        account,
-        category,
-        destinationAccount
-      };
-    }
-
-    /*
-     * Transfer.
-     */
-    if (
-      type === "transfer"
-    ) {
-      if (
-        !destinationAccountId
-      ) {
-        throw new AppError(
-          "Destination account is required for transfers",
-          400,
-          "DESTINATION_ACCOUNT_REQUIRED"
-        );
-      }
-
-      if (
-        account._id.toString() ===
-        destinationAccountId
-      ) {
-        throw new AppError(
-          "Source and destination accounts must be different",
-          400,
-          "SAME_TRANSFER_ACCOUNT"
-        );
-      }
-
-      destinationAccount =
-        await Account.findOne({
-          _id:
-            destinationAccountId,
-
-          businessId,
-
-          isActive: true
-        }).session(session);
-
-      if (
-        !destinationAccount
-      ) {
-        throw new AppError(
-          "Destination account not found or inactive",
-          404,
-          "DESTINATION_ACCOUNT_NOT_FOUND"
-        );
-      }
-
-      if (
-        account.currency !==
-        destinationAccount.currency
-      ) {
-        throw new AppError(
-          "Source and destination accounts must use the same currency",
-          400,
-          "TRANSFER_CURRENCY_MISMATCH"
-        );
-      }
-
-      return {
-        account,
-        category: null,
-        destinationAccount
-      };
-    }
-
+  if (!account) {
     throw new AppError(
-      "Unsupported transaction type",
-      400,
-      "INVALID_TRANSACTION_TYPE"
+      "Account not found or inactive",
+      404,
+      "ACCOUNT_NOT_FOUND",
     );
-  };
+  }
+
+  if (account.currency !== business.currency) {
+    throw new AppError(
+      "Account currency does not match business currency",
+      400,
+      "ACCOUNT_CURRENCY_MISMATCH",
+    );
+  }
+
+  let category = null;
+  let destinationAccount = null;
+
+  /*
+   * Income / expense.
+   */
+  if (type === "income" || type === "expense") {
+    if (!categoryId) {
+      throw new AppError("Category is required", 400, "CATEGORY_REQUIRED");
+    }
+
+    category = await Category.findOne({
+      _id: categoryId,
+      businessId,
+      isActive: true,
+    }).session(session);
+
+    if (!category) {
+      throw new AppError(
+        "Category not found or inactive",
+        404,
+        "CATEGORY_NOT_FOUND",
+      );
+    }
+
+    if (category.type !== type) {
+      throw new AppError(
+        `Category type must be ${type}`,
+        400,
+        "CATEGORY_TYPE_MISMATCH",
+      );
+    }
+
+    return {
+      account,
+      category,
+      destinationAccount,
+    };
+  }
+
+  /*
+   * Transfer.
+   */
+  if (type === "transfer") {
+    if (!destinationAccountId) {
+      throw new AppError(
+        "Destination account is required for transfers",
+        400,
+        "DESTINATION_ACCOUNT_REQUIRED",
+      );
+    }
+
+    if (account._id.toString() === destinationAccountId) {
+      throw new AppError(
+        "Source and destination accounts must be different",
+        400,
+        "SAME_TRANSFER_ACCOUNT",
+      );
+    }
+
+    destinationAccount = await Account.findOne({
+      _id: destinationAccountId,
+
+      businessId,
+
+      isActive: true,
+    }).session(session);
+
+    if (!destinationAccount) {
+      throw new AppError(
+        "Destination account not found or inactive",
+        404,
+        "DESTINATION_ACCOUNT_NOT_FOUND",
+      );
+    }
+
+    if (account.currency !== destinationAccount.currency) {
+      throw new AppError(
+        "Source and destination accounts must use the same currency",
+        400,
+        "TRANSFER_CURRENCY_MISMATCH",
+      );
+    }
+
+    return {
+      account,
+      category: null,
+      destinationAccount,
+    };
+  }
+
+  throw new AppError(
+    "Unsupported transaction type",
+    400,
+    "INVALID_TRANSACTION_TYPE",
+  );
+};
 
 /*
  * CREATE RECURRING TRANSACTION
  */
-export const createRecurringTransaction =
-  async ({
-    businessId,
-    userId,
-    type,
-    amount,
-    accountId,
-    categoryId,
-    destinationAccountId,
-    description,
-    reference,
-    frequency,
-    intervalDays,
-    startDate,
-    endDate
-  }) => {
-    const session =
-      await mongoose.startSession();
+export const createRecurringTransaction = async ({
+  businessId,
+  userId,
+  type,
+  amount,
+  accountId,
+  categoryId,
+  destinationAccountId,
+  description,
+  reference,
+  frequency,
+  intervalDays,
+  startDate,
+  endDate,
+}) => {
+  const session = await mongoose.startSession();
 
-    try {
-      let created;
+  try {
+    let created;
 
-      await session.withTransaction(
-        async () => {
-          /*
-           * Business.
-           */
-          const business =
-            await Business.findOne({
-              _id: businessId,
-              isActive: true
-            })
-              .select(
-                "_id currency"
-              )
-              .session(session);
+    await session.withTransaction(async () => {
+      /*
+       * Business.
+       */
+      const business = await Business.findOne({
+        _id: businessId,
+        isActive: true,
+      })
+        .select("_id currency")
+        .session(session);
 
-          if (!business) {
-            throw new AppError(
-              "Business not found",
-              404,
-              "BUSINESS_NOT_FOUND"
-            );
-          }
+      if (!business) {
+        throw new AppError("Business not found", 404, "BUSINESS_NOT_FOUND");
+      }
 
-          /*
-           * Frequency.
-           */
-          validateFrequency({
-            frequency,
-            intervalDays
-          });
+      /*
+       * Frequency.
+       */
+      validateFrequency({
+        frequency,
+        intervalDays,
+      });
 
-          /*
-           * Dates.
-           */
-          const {
-            start,
-            end
-          } =
-            validateDates({
-              startDate,
-              endDate
-            });
+      /*
+       * Dates.
+       */
+      const { start, end } = validateDates({
+        startDate,
+        endDate,
+      });
 
-          /*
-           * Account/category setup.
-           */
-          await validateTransactionSetup({
-            session,
-            business,
-            businessId,
-            type,
-            accountId,
-            categoryId,
-            destinationAccountId
-          });
+      /*
+       * Account/category setup.
+       */
+      await validateTransactionSetup({
+        session,
+        business,
+        businessId,
+        type,
+        accountId,
+        categoryId,
+        destinationAccountId,
+      });
 
-          /*
-           * Amount.
-           */
-          const decimalAmount =
-            new Decimal(
-              amount
-            );
+      /*
+       * Amount.
+       */
+      const decimalAmount = new Decimal(amount);
 
-          if (
-            decimalAmount.lte(0)
-          ) {
-            throw new AppError(
-              "Amount must be greater than 0",
-              400,
-              "INVALID_AMOUNT"
-            );
-          }
+      if (decimalAmount.lte(0)) {
+        throw new AppError(
+          "Amount must be greater than 0",
+          400,
+          "INVALID_AMOUNT",
+        );
+      }
 
-          /*
-           * First execution happens
-           * on startDate.
-           */
-          const recurring =
-            new RecurringTransaction({
-              businessId,
-
-              type,
-
-              amount:
-                toDecimal128(
-                  decimalAmount
-                ),
-
-              currency:
-                business.currency,
-
-              accountId,
-
-              categoryId:
-                categoryId ||
-                null,
-
-              destinationAccountId:
-                destinationAccountId ||
-                null,
-
-              description:
-                description ||
-                null,
-
-              reference:
-                reference ||
-                null,
-
-              frequency,
-
-              intervalDays:
-                frequency ===
-                "custom"
-                  ? intervalDays
-                  : null,
-
-              startDate:
-                start,
-
-              endDate:
-                end,
-
-              nextRunAt:
-                start,
-
-              executionCount:
-                0,
-
-              lastTransactionId:
-                null,
-
-              isActive:
-                true,
-
-              createdBy:
-                userId,
-
-              updatedBy:
-                userId
-            });
-
-          await recurring.save({
-            session
-          });
-
-          created =
-            recurring;
-        }
-      );
-
-      return getRecurringTransactionById({
+      /*
+       * First execution happens
+       * on startDate.
+       */
+      const recurring = new RecurringTransaction({
         businessId,
 
-        recurringId:
-          created._id
-      });
-    } finally {
-      await session.endSession();
-    }
-  };
+        type,
 
-/*
- * LIST
- */
-export const getRecurringTransactions =
-  async ({
-    businessId,
-    type,
-    isActive,
-    page = 1,
-    limit = 25
-  }) => {
-    const filter = {
-      businessId
-    };
+        amount: toDecimal128(decimalAmount),
 
-    if (type) {
-      filter.type =
-        type;
-    }
+        currency: business.currency,
 
-    if (
-      isActive !==
-      undefined
-    ) {
-      filter.isActive =
-        isActive;
-    }
+        accountId,
 
-    const skip =
-      (page - 1) *
-      limit;
+        categoryId: categoryId || null,
 
-    const [
-      recurring,
-      total
-    ] =
-      await Promise.all([
-        RecurringTransaction.find(
-          filter
-        )
-          .populate(
-            "accountId",
-            "_id name type currency"
-          )
-          .populate(
-            "destinationAccountId",
-            "_id name type currency"
-          )
-          .populate(
-            "categoryId",
-            "_id name type"
-          )
-          .populate(
-            "lastTransactionId",
-            "_id type amount transactionDate status"
-          )
-          .sort({
-            nextRunAt: 1,
-            createdAt: -1
-          })
-          .skip(skip)
-          .limit(limit),
+        destinationAccountId: destinationAccountId || null,
 
-        RecurringTransaction.countDocuments(
-          filter
-        )
-      ]);
+        description: description || null,
 
-    return {
-      recurringTransactions:
-        recurring.map(
-          formatRecurring
-        ),
+        reference: reference || null,
 
-      pagination: {
-        page,
+        frequency,
 
-        limit,
+        intervalDays: frequency === "custom" ? intervalDays : null,
 
-        total,
+        startDate: start,
 
-        totalPages:
-          Math.ceil(
-            total / limit
-          )
-      }
-    };
-  };
+        endDate: end,
 
-/*
- * GET ONE
- */
-export const getRecurringTransactionById =
-  async ({
-    businessId,
-    recurringId
-  }) => {
-    const recurring =
-      await RecurringTransaction.findOne({
-        _id:
-          recurringId,
+        nextRunAt: start,
 
-        businessId
-      })
-        .populate(
-          "accountId",
-          "_id name type currency currentBalance"
-        )
-        .populate(
-          "destinationAccountId",
-          "_id name type currency currentBalance"
-        )
-        .populate(
-          "categoryId",
-          "_id name type"
-        )
-        .populate(
-          "lastTransactionId",
-          "_id type amount currency accountId destinationAccountId transactionDate description reference status"
-        )
-        .populate(
-          "createdBy",
-          "_id name email"
-        )
-        .populate(
-          "updatedBy",
-          "_id name email"
-        );
+        executionCount: 0,
 
-    if (!recurring) {
-      throw new AppError(
-        "Recurring transaction not found",
-        404,
-        "RECURRING_TRANSACTION_NOT_FOUND"
-      );
-    }
+        lastTransactionId: null,
 
-    return formatRecurring(
-      recurring
-    );
-  };
+        isActive: true,
 
-/*
- * PAUSE / RESUME
- */
-export const updateRecurringStatus =
-  async ({
-    businessId,
-    recurringId,
-    userId,
-    isActive
-  }) => {
-    const recurring =
-      await RecurringTransaction.findOne({
-        _id:
-          recurringId,
+        createdBy: userId,
 
-        businessId
+        updatedBy: userId,
       });
 
-    if (!recurring) {
-      throw new AppError(
-        "Recurring transaction not found",
-        404,
-        "RECURRING_TRANSACTION_NOT_FOUND"
-      );
-    }
+      await recurring.save({
+        session,
+      });
 
-    /*
-     * If end date has already passed,
-     * it cannot be resumed.
-     */
-    if (
-      isActive &&
-      recurring.endDate &&
-      recurring.endDate <
-        new Date()
-    ) {
-      throw new AppError(
-        "Recurring transaction has already reached its end date",
-        409,
-        "RECURRING_TRANSACTION_EXPIRED"
-      );
-    }
-
-    recurring.isActive =
-      isActive;
-
-    recurring.updatedBy =
-      userId;
-
-    await recurring.save();
+      created = recurring;
+    });
 
     return getRecurringTransactionById({
       businessId,
 
-      recurringId:
-        recurring._id
+      recurringId: created._id,
     });
+  } finally {
+    await session.endSession();
+  }
+};
+
+/*
+ * LIST
+ */
+export const getRecurringTransactions = async ({
+  businessId,
+  type,
+  isActive,
+  page = 1,
+  limit = 25,
+}) => {
+  const filter = {
+    businessId,
   };
+
+  if (type) {
+    filter.type = type;
+  }
+
+  if (isActive !== undefined) {
+    filter.isActive = isActive;
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [recurring, total] = await Promise.all([
+    RecurringTransaction.find(filter)
+      .populate("accountId", "_id name type currency")
+      .populate("destinationAccountId", "_id name type currency")
+      .populate("categoryId", "_id name type")
+      .populate("lastTransactionId", "_id type amount transactionDate status")
+      .sort({
+        nextRunAt: 1,
+        createdAt: -1,
+      })
+      .skip(skip)
+      .limit(limit),
+
+    RecurringTransaction.countDocuments(filter),
+  ]);
+
+  return {
+    recurringTransactions: recurring.map(formatRecurring),
+
+    pagination: {
+      page,
+
+      limit,
+
+      total,
+
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+/*
+ * GET ONE
+ */
+export const getRecurringTransactionById = async ({
+  businessId,
+  recurringId,
+}) => {
+  const recurring = await RecurringTransaction.findOne({
+    _id: recurringId,
+
+    businessId,
+  })
+    .populate("accountId", "_id name type currency currentBalance")
+    .populate("destinationAccountId", "_id name type currency currentBalance")
+    .populate("categoryId", "_id name type")
+    .populate(
+      "lastTransactionId",
+      "_id type amount currency accountId destinationAccountId transactionDate description reference status",
+    )
+    .populate("createdBy", "_id name email")
+    .populate("updatedBy", "_id name email");
+
+  if (!recurring) {
+    throw new AppError(
+      "Recurring transaction not found",
+      404,
+      "RECURRING_TRANSACTION_NOT_FOUND",
+    );
+  }
+
+  return formatRecurring(recurring);
+};
+
+/*
+ * PAUSE / RESUME
+ */
+export const updateRecurringStatus = async ({
+  businessId,
+  recurringId,
+  userId,
+  isActive,
+}) => {
+  const recurring = await RecurringTransaction.findOne({
+    _id: recurringId,
+
+    businessId,
+  });
+
+  if (!recurring) {
+    throw new AppError(
+      "Recurring transaction not found",
+      404,
+      "RECURRING_TRANSACTION_NOT_FOUND",
+    );
+  }
+
+  /*
+   * If end date has already passed,
+   * it cannot be resumed.
+   */
+  if (isActive && recurring.endDate && recurring.endDate < new Date()) {
+    throw new AppError(
+      "Recurring transaction has already reached its end date",
+      409,
+      "RECURRING_TRANSACTION_EXPIRED",
+    );
+  }
+
+  recurring.isActive = isActive;
+
+  recurring.updatedBy = userId;
+
+  await recurring.save();
+
+  return getRecurringTransactionById({
+    businessId,
+
+    recurringId: recurring._id,
+  });
+};
 
 /*
  * Execute ONE recurring transaction.
@@ -795,401 +571,302 @@ export const updateRecurringStatus =
  * - scheduler
  * - future cron worker
  */
-export const executeRecurringTransaction =
-  async ({
-    businessId,
-    recurringId,
-    userId,
-    executionDate =
-      new Date()
-  }) => {
-    const session =
-      await mongoose.startSession();
+export const executeRecurringTransaction = async ({
+  businessId,
+  recurringId,
+  userId,
+  executionDate = null,
+}) => {
+  const session = await mongoose.startSession();
 
-    try {
-      let generatedTransaction;
-      let recurringIdForResponse;
+  try {
+    let generatedTransaction;
+    let recurringIdForResponse;
 
-      await session.withTransaction(
-        async () => {
-          /*
-           * Load rule.
-           */
-          const recurring =
-            await RecurringTransaction.findOne({
-              _id:
-                recurringId,
+    await session.withTransaction(async () => {
+      /*
+       * Load rule.
+       */
+      const recurring = await RecurringTransaction.findOne({
+        _id: recurringId,
 
-              businessId
-            }).session(session);
+        businessId,
+      }).session(session);
 
-          if (!recurring) {
-            throw new AppError(
-              "Recurring transaction not found",
-              404,
-              "RECURRING_TRANSACTION_NOT_FOUND"
-            );
-          }
+      if (!recurring) {
+        throw new AppError(
+          "Recurring transaction not found",
+          404,
+          "RECURRING_TRANSACTION_NOT_FOUND",
+        );
+      }
 
-          if (
-            !recurring.isActive
-          ) {
-            throw new AppError(
-              "Recurring transaction is inactive",
-              409,
-              "RECURRING_TRANSACTION_INACTIVE"
-            );
-          }
+      if (!recurring.isActive) {
+        throw new AppError(
+          "Recurring transaction is inactive",
+          409,
+          "RECURRING_TRANSACTION_INACTIVE",
+        );
+      }
 
-          const runDate =
-            new Date(
-              executionDate
-            );
+      const scheduledRunAt = new Date(recurring.nextRunAt);
 
-          /*
-           * Cannot execute before
-           * scheduled date.
-           */
-          if (
-            runDate <
-            recurring.nextRunAt
-          ) {
-            throw new AppError(
-              "Recurring transaction is not due yet",
-              409,
-              "RECURRING_TRANSACTION_NOT_DUE"
-            );
-          }
+      const runDate = executionDate ? new Date(executionDate) : scheduledRunAt;
 
-          /*
-           * End date.
-           */
-          if (
-            recurring.endDate &&
-            runDate >
-              recurring.endDate
-          ) {
-            recurring.isActive =
-              false;
+      /*
+       * Cannot execute before
+       * scheduled date.
+       */
+      if (runDate < recurring.nextRunAt) {
+        throw new AppError(
+          "Recurring transaction is not due yet",
+          409,
+          "RECURRING_TRANSACTION_NOT_DUE",
+        );
+      }
 
-            recurring.updatedBy =
-              userId;
+      /*
+       * End date.
+       */
+      if (recurring.endDate && runDate > recurring.endDate) {
+        recurring.isActive = false;
 
-            await recurring.save({
-              session
-            });
+        recurring.updatedBy = userId;
 
-            throw new AppError(
-              "Recurring transaction has reached its end date",
-              409,
-              "RECURRING_TRANSACTION_EXPIRED"
-            );
-          }
+        await recurring.save({
+          session,
+        });
 
-          /*
-           * Business.
-           */
-          const business =
-            await Business.findOne({
-              _id:
-                businessId,
+        throw new AppError(
+          "Recurring transaction has reached its end date",
+          409,
+          "RECURRING_TRANSACTION_EXPIRED",
+        );
+      }
 
-              isActive:
-                true
-            })
-              .select(
-                "_id currency"
-              )
-              .session(session);
+      /*
+       * Business.
+       */
+      const business = await Business.findOne({
+        _id: businessId,
 
-          if (!business) {
-            throw new AppError(
-              "Business not found",
-              404,
-              "BUSINESS_NOT_FOUND"
-            );
-          }
+        isActive: true,
+      })
+        .select("_id currency")
+        .session(session);
 
-          /*
-           * Account/category validation
-           * again at execution time.
-           *
-           * An account or category may
-           * have become inactive after
-           * the recurring rule was created.
-           */
-          const {
-            account,
-            category,
-            destinationAccount
-          } =
-            await validateTransactionSetup({
-              session,
+      if (!business) {
+        throw new AppError("Business not found", 404, "BUSINESS_NOT_FOUND");
+      }
 
-              business,
+      /*
+       * Account/category validation
+       * again at execution time.
+       *
+       * An account or category may
+       * have become inactive after
+       * the recurring rule was created.
+       */
+      const { account, category, destinationAccount } =
+        await validateTransactionSetup({
+          session,
 
-              businessId,
+          business,
 
-              type:
-                recurring.type,
+          businessId,
 
-              accountId:
-                recurring.accountId,
+          type: recurring.type,
 
-              categoryId:
-                recurring.categoryId,
+          accountId: recurring.accountId,
 
-              destinationAccountId:
-                recurring.destinationAccountId
-            });
+          categoryId: recurring.categoryId,
 
-          const amount =
-            new Decimal(
-              recurring.amount.toString()
-            );
+          destinationAccountId: recurring.destinationAccountId,
+        });
 
-          /*
-           * INCOME
-           */
-          if (
-            recurring.type ===
-            "income"
-          ) {
-            await Account.updateOne(
-              {
-                _id:
-                  account._id,
+      const amount = new Decimal(recurring.amount.toString());
 
-                businessId,
+      /*
+       * INCOME
+       */
+      if (recurring.type === "income") {
+        await Account.updateOne(
+          {
+            _id: account._id,
 
-                isActive:
-                  true
-              },
-              {
-                $inc: {
-                  currentBalance:
-                    toDecimal128(
-                      amount
-                    )
-                }
-              },
-              {
-                session
-              }
-            );
-          }
+            businessId,
 
-          /*
-           * EXPENSE
-           */
-          if (
-            recurring.type ===
-            "expense"
-          ) {
-            await Account.updateOne(
-              {
-                _id:
-                  account._id,
+            isActive: true,
+          },
+          {
+            $inc: {
+              currentBalance: toDecimal128(amount),
+            },
+          },
+          {
+            session,
+          },
+        );
+      }
 
-                businessId,
+      /*
+       * EXPENSE
+       */
+      if (recurring.type === "expense") {
+        await Account.updateOne(
+          {
+            _id: account._id,
 
-                isActive:
-                  true
-              },
-              {
-                $inc: {
-                  currentBalance:
-                    toDecimal128(
-                      amount.neg()
-                    )
-                }
-              },
-              {
-                session
-              }
-            );
-          }
+            businessId,
 
-          /*
-           * TRANSFER
-           */
-          if (
-            recurring.type ===
-            "transfer"
-          ) {
-            await Account.updateOne(
-              {
-                _id:
-                  account._id,
+            isActive: true,
+          },
+          {
+            $inc: {
+              currentBalance: toDecimal128(amount.neg()),
+            },
+          },
+          {
+            session,
+          },
+        );
+      }
 
-                businessId,
+      /*
+       * TRANSFER
+       */
+      if (recurring.type === "transfer") {
+        await Account.updateOne(
+          {
+            _id: account._id,
 
-                isActive:
-                  true
-              },
-              {
-                $inc: {
-                  currentBalance:
-                    toDecimal128(
-                      amount.neg()
-                    )
-                }
-              },
-              {
-                session
-              }
-            );
+            businessId,
 
-            await Account.updateOne(
-              {
-                _id:
-                  destinationAccount._id,
+            isActive: true,
+          },
+          {
+            $inc: {
+              currentBalance: toDecimal128(amount.neg()),
+            },
+          },
+          {
+            session,
+          },
+        );
 
-                businessId,
+        await Account.updateOne(
+          {
+            _id: destinationAccount._id,
 
-                isActive:
-                  true
-              },
-              {
-                $inc: {
-                  currentBalance:
-                    toDecimal128(
-                      amount
-                    )
-                }
-              },
-              {
-                session
-              }
-            );
-          }
+            businessId,
 
-          /*
-           * Create the normal transaction.
-           *
-           * This is what Dashboard and
-           * Transaction APIs will see.
-           */
-          const transactionResult =
-            await Transaction.create(
-              [
-                {
-                  businessId,
+            isActive: true,
+          },
+          {
+            $inc: {
+              currentBalance: toDecimal128(amount),
+            },
+          },
+          {
+            session,
+          },
+        );
+      }
 
-                  type:
-                    recurring.type,
+      /*
+       * Create the normal transaction.
+       *
+       * This is what Dashboard and
+       * Transaction APIs will see.
+       */
+      const transactionResult = await Transaction.create(
+        [
+          {
+            businessId,
 
-                  amount:
-                    toDecimal128(
-                      amount
-                    ),
+            type: recurring.type,
 
-                  currency:
-                    business.currency,
+            amount: toDecimal128(amount),
 
-                  accountId:
-                    account._id,
+            currency: business.currency,
 
-                  categoryId:
-                    category
-                      ? category._id
-                      : null,
+            accountId: account._id,
 
-                  destinationAccountId:
-                    destinationAccount
-                      ? destinationAccount._id
-                      : null,
+            categoryId: category ? category._id : null,
 
-                  transactionDate:
-                    runDate,
+            destinationAccountId: destinationAccount
+              ? destinationAccount._id
+              : null,
 
-                  description:
-                    recurring.description ||
-                    null,
+            transactionDate: runDate,
 
-                  reference:
-                    recurring.reference ||
-                    null,
+            description: recurring.description || null,
 
-                  source:
-                    "manual",
+            reference: recurring.reference || null,
 
-                  status:
-                    "posted",
+            source: "recurring",
 
-                  createdBy:
-                    userId,
+            recurringExecutionKey: `recurring:${recurring._id.toString()}:${scheduledRunAt.toISOString()}`,
 
-                  updatedBy:
-                    userId
-                }
-              ],
-              {
-                session
-              }
-            );
+            status: "posted",
 
-          generatedTransaction =
-            transactionResult[0];
+            createdBy: userId,
 
-          /*
-           * Calculate next run.
-           */
-          const nextRunAt =
-            calculateNextRun({
-              currentDate:
-                recurring.nextRunAt,
-
-              frequency:
-                recurring.frequency,
-
-              intervalDays:
-                recurring.intervalDays
-            });
-
-          recurring.executionCount +=
-            1;
-
-          recurring.lastTransactionId =
-            generatedTransaction._id;
-
-          recurring.nextRunAt =
-            nextRunAt;
-
-          recurring.updatedBy =
-            userId;
-
-          /*
-           * If the next scheduled date
-           * is beyond endDate, deactivate
-           * the rule.
-           */
-          if (
-            recurring.endDate &&
-            nextRunAt >
-              recurring.endDate
-          ) {
-            recurring.isActive =
-              false;
-          }
-
-          await recurring.save({
-            session
-          });
-
-          recurringIdForResponse =
-            recurring._id;
-        }
+            updatedBy: userId,
+          },
+        ],
+        {
+          session,
+        },
       );
 
-      return {
-        transaction:
-          generatedTransaction,
+      generatedTransaction = transactionResult[0];
 
-        recurringTransactionId:
-          recurringIdForResponse
-      };
-    } finally {
-      await session.endSession();
-    }
-  };
+      /*
+       * Calculate next run.
+       */
+      const nextRunAt = calculateNextRun({
+        currentDate: recurring.nextRunAt,
+
+        frequency: recurring.frequency,
+
+        intervalDays: recurring.intervalDays,
+      });
+
+      recurring.executionCount += 1;
+
+      recurring.lastExecutionAt = new Date();
+
+      recurring.lastExecutionError = null;
+
+      recurring.lastTransactionId = generatedTransaction._id;
+
+      recurring.nextRunAt = nextRunAt;
+
+      recurring.updatedBy = userId;
+
+      /*
+       * If the next scheduled date
+       * is beyond endDate, deactivate
+       * the rule.
+       */
+      if (recurring.endDate && nextRunAt > recurring.endDate) {
+        recurring.isActive = false;
+      }
+
+      await recurring.save({
+        session,
+      });
+
+      recurringIdForResponse = recurring._id;
+    });
+
+    return {
+      transaction: generatedTransaction,
+
+      recurringTransactionId: recurringIdForResponse,
+    };
+  } finally {
+    await session.endSession();
+  }
+};

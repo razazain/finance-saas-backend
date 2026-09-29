@@ -6,7 +6,9 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "worker": "node src/worker.js",
+    "integration": "node scripts/integration.test.mjs"
   },
   "keywords": [
     "finance",

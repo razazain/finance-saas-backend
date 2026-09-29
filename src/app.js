@@ -20,6 +20,7 @@ import billPaymentRoutes from "./routes/billPayment.routes.js";
 import ledgerRoutes from "./routes/ledger.routes.js";
 import recurringTransactionRoutes from "./routes/recurringTransaction.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import documentRoutes from "./routes/document.routes.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
@@ -107,6 +108,7 @@ app.use("/api/v1", billPaymentRoutes);
 app.use("/api/v1", ledgerRoutes);
 app.use("/api/v1/recurring-transactions", recurringTransactionRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/documents", documentRoutes);
 
 /*
  * 404 handler

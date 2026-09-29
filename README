@@ -440,3 +440,74 @@ License information will be added when the project is ready for public release.
 
 ```
 ```
+
+## MVP additions in the latest version
+
+### Recurring transaction automation
+
+Recurring transactions are automatically executed by the Node process when `RECURRING_WORKER_ENABLED=true`. The worker checks due rules every `RECURRING_WORKER_INTERVAL_MS` milliseconds.
+
+Each scheduled occurrence receives a deterministic `recurringExecutionKey`, and the transaction collection has a unique sparse index for that key. This prevents duplicate financial postings when multiple application instances race to execute the same occurrence.
+
+The generated transaction uses `source: "recurring"` and is written in the same MongoDB transaction as the account balance update and recurring-rule update.
+
+### Documents + Cloudinary
+
+Permanent document files are not stored in the Node.js filesystem. The API creates a signed Cloudinary upload payload using the folder:
+
+```text
+financeSaaS/businesses/{businessId}/documents/{documentId}
+```
+
+The browser/mobile client uploads directly to Cloudinary, then confirms the uploaded asset with the API. This keeps large files away from the Node server.
+
+Document endpoints:
+
+```text
+POST   /api/v1/documents/upload/init
+POST   /api/v1/documents/:id/upload/complete
+GET    /api/v1/documents
+GET    /api/v1/documents/:id
+POST   /api/v1/documents/:id/process
+POST   /api/v1/documents/:id/convert
+DELETE /api/v1/documents/:id
+```
+
+### OCR
+
+The Node API calls the separate Python PaddleOCR service. The OCR service downloads the Cloudinary asset temporarily, extracts text, returns it to Node, and removes its temporary local copy.
+
+Run it separately:
+
+```bash
+cd ocr-service
+python -m venv venv
+# Windows: venv\\Scripts\\activate
+# Linux/macOS: source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 8001
+```
+
+If PaddlePaddle does not provide a compatible wheel for the Python version installed on your machine, use Python 3.12 for the OCR service. The Node.js application is independent of the OCR Python version.
+
+### Important financial rule
+
+OCR extraction is best-effort. The API never silently converts OCR output into a financial record. A user must explicitly call the conversion endpoint and provide/confirm the required customer/vendor/account/category information.
+
+## Document upload flow
+
+1. Authenticate.
+2. `POST /api/v1/documents/upload/init` with `originalFileName`, `mimeType`, `fileSize`, and optional `documentType`.
+3. Use the returned signed parameters to upload the file directly to the returned Cloudinary `uploadUrl` using `multipart/form-data` fields:
+   - `file`
+   - `api_key`
+   - `timestamp`
+   - `signature`
+   - `folder`
+   - `public_id`
+4. Send Cloudinary's `public_id`, `secure_url`, `resource_type`, and `format` to `POST /api/v1/documents/:id/upload/complete`.
+5. Call `POST /api/v1/documents/:id/process` to run PaddleOCR.
+6. Review `extractedData`.
+7. Call `POST /api/v1/documents/:id/convert` only after confirming the extracted amount/date and providing the required customer/vendor/account/category IDs.
+
+This direct-upload design means the Node server never permanently stores invoice images or PDFs.

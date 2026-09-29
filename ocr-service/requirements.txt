@@ -1,6 +1,5 @@
 paddlepaddle==3.2.0
-paddleocr[doc-parser]
+paddleocr[doc-parser]==3.2.0
 fastapi
 uvicorn[standard]
-python-multipart
 requests
