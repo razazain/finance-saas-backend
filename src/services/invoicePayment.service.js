@@ -139,9 +139,9 @@ export const createInvoicePayment = async ({
 
       const balanceDueNumber = new Decimal(currentBalance.toString());
 
-      const paymentNumber = parseFloat(paymentAmount.toString());
+      const paymentNumber = paymentAmount;
 
-      if (paymentNumber > balanceDueNumber) {
+      if (paymentNumber.gt(balanceDueNumber)) {
         throw new AppError(
           "Payment cannot be greater than invoice balance due",
           400,
@@ -212,8 +212,9 @@ export const createInvoicePayment = async ({
        * Avoid tiny floating point
        * residue.
        */
-      const normalizedBalance =
-        Math.abs(Number(newBalance)) < 0.0001 ? "0.0000" : newBalance;
+      const normalizedBalance = newBalance.abs().lt("0.0001")
+        ? new Decimal("0")
+        : newBalance;
 
       /*
        * 10. Update account balance.
@@ -316,15 +317,18 @@ export const createInvoicePayment = async ({
       /*
        * 13. Update invoice.
        */
-      invoice.paidAmount = mongoose.Types.Decimal128.fromString(newPaid);
+      invoice.paidAmount = mongoose.Types.Decimal128.fromString(
+        newPaid.toFixed(4),
+      );
 
-      invoice.balanceDue =
-        mongoose.Types.Decimal128.fromString(normalizedBalance);
+      invoice.balanceDue = mongoose.Types.Decimal128.fromString(
+        new Decimal(normalizedBalance).toFixed(4),
+      );
 
       /*
        * Fully paid.
        */
-      if (Number(normalizedBalance) === 0) {
+      if (new Decimal(normalizedBalance).eq(0)) {
         invoice.status = "paid";
       } else {
         invoice.status = "partially_paid";

@@ -6,7 +6,7 @@ const categorySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
       required: true,
-      index: true
+      index: true,
     },
 
     name: {
@@ -14,50 +14,47 @@ const categorySchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: 2,
-      maxlength: 100
+      maxlength: 100,
     },
 
     type: {
       type: String,
-      enum: [
-        "income",
-        "expense"
-      ],
-      required: true
+      enum: ["income", "expense"],
+      required: true,
     },
 
     description: {
       type: String,
       trim: true,
       maxlength: 500,
-      default: null
+      default: null,
     },
 
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
     isSystem: {
       type: Boolean,
-      default: false
+      default: false,
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
 
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
-    }
+      required: true,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 /*
@@ -76,11 +73,11 @@ categorySchema.index(
   {
     businessId: 1,
     type: 1,
-    name: 1
+    name: 1,
   },
   {
-    unique: true
-  }
+    unique: true,
+  },
 );
 
 /*
@@ -89,12 +86,9 @@ categorySchema.index(
 categorySchema.index({
   businessId: 1,
   type: 1,
-  isActive: 1
+  isActive: 1,
 });
 
-const Category = mongoose.model(
-  "Category",
-  categorySchema
-);
+const Category = mongoose.model("Category", categorySchema);
 
 export default Category;

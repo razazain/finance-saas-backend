@@ -1,156 +1,102 @@
 import {
-    createParty,
-    getParties,
-    getPartyById,
-    updateParty,
-    updatePartyStatus
+  createParty,
+  getParties,
+  getPartyById,
+  updateParty,
+  updatePartyStatus,
 } from "../services/party.service.js";
 
-import {
-    successResponse
-} from "../utils/response.js";
+import { successResponse } from "../utils/response.js";
 
-import {
-    asyncHandler
-} from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const create =
-    asyncHandler(
-        async (req, res) => {
+export const create = asyncHandler(async (req, res) => {
+  const party = await createParty({
+    businessId: req.user.businessId,
 
-            const party =
-                await createParty({
-                    businessId:
-                        req.user.businessId,
+    userId: req.user.userId,
 
-                    userId:
-                        req.user.userId,
+    ...req.validated.body,
+  });
 
-                    ...req.validated.body
-                });
+  return successResponse({
+    res,
+    statusCode: 201,
+    message: "Party created successfully",
+    data: {
+      party,
+    },
+  });
+});
 
-            return successResponse({
-                res,
-                statusCode: 201,
-                message:
-                    "Party created successfully",
-                data: {
-                    party
-                }
-            });
-        }
-    );
+export const list = asyncHandler(async (req, res) => {
+  const parties = await getParties({
+    businessId: req.user.businessId,
 
-export const list =
-    asyncHandler(
-        async (req, res) => {
+    ...req.validated.query,
+  });
 
-            const parties =
-                await getParties({
-                    businessId:
-                        req.user.businessId,
+  return successResponse({
+    res,
+    message: "Parties retrieved successfully",
+    data: {
+      parties,
+    },
+  });
+});
 
-                    ...req.validated.query
-                });
+export const getOne = asyncHandler(async (req, res) => {
+  const party = await getPartyById({
+    businessId: req.user.businessId,
 
-            return successResponse({
-                res,
-                message:
-                    "Parties retrieved successfully",
-                data: {
-                    parties
-                }
-            });
-        }
-    );
+    partyId: req.validated.params.id,
+  });
 
-export const getOne =
-    asyncHandler(
-        async (req, res) => {
+  return successResponse({
+    res,
+    message: "Party retrieved successfully",
+    data: {
+      party,
+    },
+  });
+});
 
-            const party =
-                await getPartyById({
-                    businessId:
-                        req.user.businessId,
+export const update = asyncHandler(async (req, res) => {
+  const party = await updateParty({
+    businessId: req.user.businessId,
 
-                    partyId:
-                        req.validated
-                            .params
-                            .id
-                });
+    partyId: req.validated.params.id,
 
-            return successResponse({
-                res,
-                message:
-                    "Party retrieved successfully",
-                data: {
-                    party
-                }
-            });
-        }
-    );
+    userId: req.user.userId,
 
-export const update =
-    asyncHandler(
-        async (req, res) => {
+    ...req.validated.body,
+  });
 
-            const party =
-                await updateParty({
-                    businessId:
-                        req.user.businessId,
+  return successResponse({
+    res,
+    message: "Party updated successfully",
+    data: {
+      party,
+    },
+  });
+});
 
-                    partyId:
-                        req.validated
-                            .params
-                            .id,
+export const updateStatus = asyncHandler(async (req, res) => {
+  const party = await updatePartyStatus({
+    businessId: req.user.businessId,
 
-                    userId:
-                        req.user.userId,
+    partyId: req.validated.params.id,
 
-                    ...req.validated.body
-                });
+    userId: req.user.userId,
 
-            return successResponse({
-                res,
-                message:
-                    "Party updated successfully",
-                data: {
-                    party
-                }
-            });
-        }
-    );
+    isActive: req.validated.body.isActive,
+  });
 
-export const updateStatus =
-    asyncHandler(
-        async (req, res) => {
-
-            const party =
-                await updatePartyStatus({
-                    businessId:
-                        req.user.businessId,
-
-                    partyId:
-                        req.validated
-                            .params
-                            .id,
-
-                    userId:
-                        req.user.userId,
-
-                    isActive:
-                        req.validated
-                            .body
-                            .isActive
-                });
-
-            return successResponse({
-                res,
-                message:
-                    "Party status updated successfully",
-                data: {
-                    party
-                }
-            });
-        }
-    );
+  return successResponse({
+    res,
+    message: "Party status updated successfully",
+    data: {
+      party,
+    },
+  });
+});

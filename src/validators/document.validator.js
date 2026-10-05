@@ -113,3 +113,7 @@ export const convertDocumentSchema = z.object({
     }),
   ]),
 });
+export const reviewDocumentSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({ extractedData: z.any() }),
+});

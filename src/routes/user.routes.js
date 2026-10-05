@@ -5,52 +5,40 @@ import {
   getUsers,
   getUserById,
   updateUser,
-  updateStatus
+  updateStatus,
 } from "../controllers/user.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   createUserSchema,
   updateUserSchema,
   updateUserStatusSchema,
-  getUserSchema
+  getUserSchema,
 } from "../validators/user.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 router.post(
   "/",
   authenticate,
   authorize("owner", "admin"),
   validate(createUserSchema),
-  createUser
+  createUser,
 );
 
-router.get(
-  "/",
-  authenticate,
-  authorize("owner", "admin"),
-  getUsers
-);
+router.get("/", authenticate, authorize("owner", "admin"), getUsers);
 
 router.get(
   "/:id",
   authenticate,
   authorize("owner", "admin"),
   validate(getUserSchema),
-  getUserById
+  getUserById,
 );
 
 router.patch(
@@ -58,7 +46,7 @@ router.patch(
   authenticate,
   authorize("owner", "admin"),
   validate(updateUserSchema),
-  updateUser
+  updateUser,
 );
 
 router.patch(
@@ -66,7 +54,7 @@ router.patch(
   authenticate,
   authorize("owner", "admin"),
   validate(updateUserStatusSchema),
-  updateStatus
+  updateStatus,
 );
 
 export default router;

@@ -46,6 +46,44 @@ const envSchema = z.object({
     .min(10000)
     .max(3600000)
     .default(60000),
+  SMTP_ENABLED: z.preprocess(
+    (v) => String(v || "false").toLowerCase() === "true",
+    z.boolean(),
+  ),
+  SMTP_HOST: z.string().default(""),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z.preprocess(
+    (v) => String(v || "false").toLowerCase() === "true",
+    z.boolean(),
+  ),
+  SMTP_USER: z.string().default(""),
+  SMTP_PASSWORD: z.string().default(""),
+  SMTP_FROM_EMAIL: z.string().email().default("no-reply@example.com"),
+  SMTP_FROM_NAME: z.string().default("Finance SaaS"),
+  EMAIL_VERIFICATION_REQUIRED: z.preprocess(
+    (v) => String(v || "false").toLowerCase() === "true",
+    z.boolean(),
+  ),
+  EMAIL_VERIFICATION_EXPIRES_MINUTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(30),
+  PASSWORD_RESET_EXPIRES_MINUTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(30),
+  MFA_ISSUER: z.string().default("Finance SaaS"),
+  IDEMPOTENCY_TTL_HOURS: z.coerce.number().int().positive().default(24),
+  AUDIT_LOG_ENABLED: z.preprocess(
+    (v) => String(v || "true").toLowerCase() !== "false",
+    z.boolean(),
+  ),
+  DOCUMENT_PRIVATE_ACCESS: z.preprocess(
+    (v) => String(v || "true").toLowerCase() !== "false",
+    z.boolean(),
+  ),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

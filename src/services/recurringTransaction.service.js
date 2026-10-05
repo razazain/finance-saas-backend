@@ -60,13 +60,22 @@ const calculateNextRun = ({ currentDate, frequency, intervalDays }) => {
       next.setDate(next.getDate() + 7);
       break;
 
-    case "monthly":
+    case "monthly": {
+      const day = next.getDate();
+      next.setDate(1);
       next.setMonth(next.getMonth() + 1);
+      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      next.setDate(Math.min(day, lastDay));
       break;
+    }
 
-    case "yearly":
-      next.setFullYear(next.getFullYear() + 1);
+    case "yearly": {
+      const month = next.getMonth(); const day = next.getDate();
+      next.setDate(1); next.setFullYear(next.getFullYear() + 1); next.setMonth(month);
+      const lastDay = new Date(next.getFullYear(), month + 1, 0).getDate();
+      next.setDate(Math.min(day, lastDay));
       break;
+    }
 
     case "custom":
       if (!intervalDays) {
@@ -376,7 +385,7 @@ export const createRecurringTransaction = async ({
 
         amount: toDecimal128(decimalAmount),
 
-        currency: business.currency,
+        currency: (await Account.findById(accountId).select("currency").session(session)).currency,
 
         accountId,
 
@@ -630,18 +639,10 @@ export const executeRecurringTransaction = async ({
        */
       if (recurring.endDate && runDate > recurring.endDate) {
         recurring.isActive = false;
-
         recurring.updatedBy = userId;
-
-        await recurring.save({
-          session,
-        });
-
-        throw new AppError(
-          "Recurring transaction has reached its end date",
-          409,
-          "RECURRING_TRANSACTION_EXPIRED",
-        );
+        await recurring.save({ session });
+        recurringIdForResponse = recurring._id;
+        return;
       }
 
       /*
@@ -861,11 +862,7 @@ export const executeRecurringTransaction = async ({
       recurringIdForResponse = recurring._id;
     });
 
-    return {
-      transaction: generatedTransaction,
-
-      recurringTransactionId: recurringIdForResponse,
-    };
+    return { transaction: generatedTransaction || null, recurringTransactionId: recurringIdForResponse, expired: !generatedTransaction };
   } finally {
     await session.endSession();
   }

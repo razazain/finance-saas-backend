@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import Transaction from "../models/Transaction.js";
 import Account from "../models/Account.js";
+import Business from "../models/Bussiness.js";
 import Category from "../models/Category.js";
 
 import {
@@ -79,6 +80,9 @@ export const getIncomeExpenseReport =
       getBusinessObjectId(
         businessId
       );
+
+    const business = await Business.findById(businessObjectId).select("timezone").lean();
+    const businessTimezone = business?.timezone || "Asia/Karachi";
 
     const dateFilter =
       buildDateFilter({
@@ -251,6 +255,9 @@ export const getCashFlowReport =
         businessId
       );
 
+    const business = await Business.findById(businessObjectId).select("timezone").lean();
+    const businessTimezone = business?.timezone || "Asia/Karachi";
+
     const dateFilter =
       buildDateFilter({
         from,
@@ -285,8 +292,8 @@ export const getCashFlowReport =
                 format:
                   "%Y-%m-%d",
 
-                date:
-                  "$transactionDate"
+                date: "$transactionDate",
+                timezone: businessTimezone
               }
             },
 
@@ -400,6 +407,9 @@ export const getCategoryBreakdownReport =
       getBusinessObjectId(
         businessId
       );
+
+    const business = await Business.findById(businessObjectId).select("timezone").lean();
+    const businessTimezone = business?.timezone || "Asia/Karachi";
 
     const dateFilter =
       buildDateFilter({
@@ -556,6 +566,9 @@ export const getMonthlySummaryReport =
         businessId
       );
 
+    const business = await Business.findById(businessObjectId).select("timezone").lean();
+    const businessTimezone = business?.timezone || "Asia/Karachi";
+
     const dateFilter =
       buildDateFilter({
         from,
@@ -586,15 +599,7 @@ export const getMonthlySummaryReport =
         {
           $group: {
             _id: {
-              year: {
-                $year:
-                  "$transactionDate"
-              },
-
-              month: {
-                $month:
-                  "$transactionDate"
-              }
+              $dateToString: { format: "%Y-%m", date: "$transactionDate", timezone: businessTimezone }
             },
 
             income: {
@@ -723,6 +728,9 @@ export const getAccountSummaryReport =
         businessId
       );
 
+    const business = await Business.findById(businessObjectId).select("timezone").lean();
+    const businessTimezone = business?.timezone || "Asia/Karachi";
+
     const dateFilter =
       buildDateFilter({
         from,
@@ -748,10 +756,8 @@ export const getAccountSummaryReport =
     };
 
     if (accountId) {
-      match.accountId =
-        new mongoose.Types.ObjectId(
-          accountId
-        );
+      const oid = new mongoose.Types.ObjectId(accountId);
+      match.$or = [{ accountId: oid }, { destinationAccountId: oid }];
     }
 
     const result =
@@ -762,24 +768,19 @@ export const getAccountSummaryReport =
         },
 
         {
+          $project: {
+            amount: 1,
+            accountId: { $cond: [ { $eq: ["$type", "transfer"] }, ["$accountId", "$destinationAccountId"], ["$accountId"] ] },
+            effectiveType: { $cond: [ { $eq: ["$type", "transfer"] }, ["expense", "income"], ["$type"] ] }
+          }
+        },
+        { $unwind: { path: "$accountId", includeArrayIndex: "side" } },
+        { $set: { effectiveType: { $arrayElemAt: ["$effectiveType", "$side"] } } },
+        {
           $group: {
-            _id: {
-              accountId:
-                "$accountId",
-
-              type:
-                "$type"
-            },
-
-            total: {
-              $sum:
-                "$amount"
-            },
-
-            transactionCount: {
-              $sum:
-                1
-            }
+            _id: { accountId: "$accountId", type: "$effectiveType" },
+            total: { $sum: "$amount" },
+            transactionCount: { $sum: 1 }
           }
         },
 

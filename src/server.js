@@ -9,63 +9,39 @@ const startServer = async () => {
 
   const stopRecurringWorker = startRecurringTransactionWorker();
 
-  const server =
-    app.listen(
-      env.PORT,
-      () => {
-        console.log(
-          `Server running on port ${env.PORT}`
-        );
+  const server = app.listen(env.PORT, () => {
+    console.log(`Server running on port ${env.PORT}`);
 
-        console.log(
-          `Environment: ${env.NODE_ENV}`
-        );
-        // console.log(
-        //   `🔗 API: http://localhost:${env.PORT}/api/v1`
-        // );
-      }
-    );
+    console.log(`Environment: ${env.NODE_ENV}`);
+    // console.log(
+    //   `🔗 API: http://localhost:${env.PORT}/api/v1`
+    // );
+  });
 
   /*
    * Graceful shutdown
    */
-  const shutdown = async (
-    signal
-  ) => {
-    console.log(
-      `${signal} received. Shutting down gracefully...`
-    );
+  const shutdown = async (signal) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
 
     stopRecurringWorker();
 
     server.close(() => {
-      console.log(
-        "HTTP server closed."
-      );
+      console.log("HTTP server closed.");
 
       process.exit(0);
     });
   };
 
-  process.on(
-    "SIGTERM",
-    () => shutdown("SIGTERM")
-  );
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-  process.on(
-    "SIGINT",
-    () => shutdown("SIGINT")
-  );
+  process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
-startServer().catch(
-  (error) => {
-    console.error(
-      "❌ Failed to start server"
-    );
+startServer().catch((error) => {
+  console.error("❌ Failed to start server");
 
-    console.error(error);
+  console.error(error);
 
-    process.exit(1);
-  }
-);
+  process.exit(1);
+});

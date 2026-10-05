@@ -3,28 +3,23 @@ import express from "express";
 import {
   create,
   list,
-  getOne
+  getOne,
+  reverse,
 } from "../controllers/billPayment.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { idempotency } from "../middleware/idempotency.middleware.js";
 
 import {
   createBillPaymentSchema,
-  billPaymentIdSchema
+  billPaymentIdSchema,
 } from "../validators/billPayment.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Record payment for a bill.
@@ -32,15 +27,10 @@ const router =
 router.post(
   "/bills/:id/payments",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    createBillPaymentSchema
-  ),
-  create
+  authorize("owner", "admin", "employee"),
+  validate(createBillPaymentSchema),
+  idempotency,
+  create,
 );
 
 /*
@@ -49,15 +39,9 @@ router.post(
 router.get(
   "/bills/:id/payments",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    billPaymentIdSchema
-  ),
-  list
+  authorize("owner", "admin", "employee"),
+  validate(billPaymentIdSchema),
+  list,
 );
 
 /*
@@ -66,15 +50,16 @@ router.get(
 router.get(
   "/bill-payments/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    billPaymentIdSchema
-  ),
-  getOne
+  authorize("owner", "admin", "employee"),
+  validate(billPaymentIdSchema),
+  getOne,
 );
 
+router.post(
+  "/bill-payments/:id/reverse",
+  authenticate,
+  authorize("owner", "admin"),
+  validate(billPaymentIdSchema),
+  reverse,
+);
 export default router;

@@ -5,30 +5,24 @@ import {
   list,
   getOne,
   updateStatus,
-  execute
+  execute,
 } from "../controllers/recurringTransaction.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { idempotency } from "../middleware/idempotency.middleware.js";
 
 import {
   createRecurringTransactionSchema,
   listRecurringTransactionSchema,
   recurringTransactionIdSchema,
-  recurringTransactionStatusSchema
+  recurringTransactionStatusSchema,
 } from "../validators/recurringTransaction.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Create recurring rule.
@@ -37,17 +31,12 @@ router.post(
   "/",
   authenticate,
 
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
+  authorize("owner", "admin", "employee"),
 
-  validate(
-    createRecurringTransactionSchema
-  ),
+  validate(createRecurringTransactionSchema),
+  idempotency,
 
-  create
+  create,
 );
 
 /*
@@ -57,17 +46,11 @@ router.get(
   "/",
   authenticate,
 
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
+  authorize("owner", "admin", "employee"),
 
-  validate(
-    listRecurringTransactionSchema
-  ),
+  validate(listRecurringTransactionSchema),
 
-  list
+  list,
 );
 
 /*
@@ -77,17 +60,11 @@ router.get(
   "/:id",
   authenticate,
 
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
+  authorize("owner", "admin", "employee"),
 
-  validate(
-    recurringTransactionIdSchema
-  ),
+  validate(recurringTransactionIdSchema),
 
-  getOne
+  getOne,
 );
 
 /*
@@ -100,16 +77,11 @@ router.patch(
   "/:id/status",
   authenticate,
 
-  authorize(
-    "owner",
-    "admin"
-  ),
+  authorize("owner", "admin"),
 
-  validate(
-    recurringTransactionStatusSchema
-  ),
+  validate(recurringTransactionStatusSchema),
 
-  updateStatus
+  updateStatus,
 );
 
 /*
@@ -121,17 +93,11 @@ router.post(
   "/:id/execute",
   authenticate,
 
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
+  authorize("owner", "admin", "employee"),
 
-  validate(
-    recurringTransactionIdSchema
-  ),
+  validate(recurringTransactionIdSchema),
 
-  execute
+  execute,
 );
 
 export default router;

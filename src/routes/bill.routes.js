@@ -5,31 +5,24 @@ import {
   list,
   getOne,
   update,
-  updateStatus
+  updateStatus,
 } from "../controllers/bill.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   createBillSchema,
   listBillSchema,
   billIdSchema,
   updateBillSchema,
-  updateBillStatusSchema
+  updateBillStatusSchema,
 } from "../validators/bill.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Create bill.
@@ -39,15 +32,9 @@ const router =
 router.post(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    createBillSchema
-  ),
-  create
+  authorize("owner", "admin", "employee"),
+  validate(createBillSchema),
+  create,
 );
 
 /*
@@ -56,15 +43,9 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    listBillSchema
-  ),
-  list
+  authorize("owner", "admin", "employee"),
+  validate(listBillSchema),
+  list,
 );
 
 /*
@@ -73,15 +54,9 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    billIdSchema
-  ),
-  getOne
+  authorize("owner", "admin", "employee"),
+  validate(billIdSchema),
+  getOne,
 );
 
 /*
@@ -90,15 +65,9 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    updateBillSchema
-  ),
-  update
+  authorize("owner", "admin", "employee"),
+  validate(updateBillSchema),
+  update,
 );
 
 /*
@@ -110,14 +79,9 @@ router.patch(
 router.patch(
   "/:id/status",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    updateBillStatusSchema
-  ),
-  updateStatus
+  authorize("owner", "admin"),
+  validate(updateBillStatusSchema),
+  updateStatus,
 );
 
 export default router;

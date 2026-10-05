@@ -1,5 +1,5 @@
 export const businessScope = (req) => {
   return {
-    businessId: req.user.businessId
+    businessId: req.user.businessId,
   };
 };

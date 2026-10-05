@@ -8,24 +8,19 @@ export const createCategory = async ({
   userId,
   name,
   type,
-  description
+  description,
 }) => {
   /*
    * Make sure the business still exists
    * and is active.
    */
-  const business =
-    await Business.findOne({
-      _id: businessId,
-      isActive: true
-    }).select("_id");
+  const business = await Business.findOne({
+    _id: businessId,
+    isActive: true,
+  }).select("_id");
 
   if (!business) {
-    throw new AppError(
-      "Business not found",
-      404,
-      "BUSINESS_NOT_FOUND"
-    );
+    throw new AppError("Business not found", 404, "BUSINESS_NOT_FOUND");
   }
 
   /*
@@ -37,47 +32,39 @@ export const createCategory = async ({
    * We normalize the stored name to make
    * duplicate prevention predictable.
    */
-  const normalizedName =
-    normalizeCategoryName(name);
+  const normalizedName = normalizeCategoryName(name);
 
-  const existingCategory =
-    await Category.findOne({
-      businessId,
-      type,
-      name: normalizedName
-    });
+  const existingCategory = await Category.findOne({
+    businessId,
+    type,
+    name: normalizedName,
+  });
 
   if (existingCategory) {
     throw new AppError(
       "A category with this name and type already exists",
       409,
-      "CATEGORY_ALREADY_EXISTS"
+      "CATEGORY_ALREADY_EXISTS",
     );
   }
 
-  const category =
-    await Category.create({
-      businessId,
-      name: normalizedName,
-      type,
-      description:
-        description || null,
-      isActive: true,
-      isSystem: false,
-      createdBy: userId,
-      updatedBy: userId
-    });
+  const category = await Category.create({
+    businessId,
+    name: normalizedName,
+    type,
+    description: description || null,
+    isActive: true,
+    isSystem: false,
+    createdBy: userId,
+    updatedBy: userId,
+  });
 
   return category;
 };
 
-export const getCategories = async ({
-  businessId,
-  type,
-  isActive
-}) => {
+export const getCategories = async ({ businessId, type, isActive }) => {
   const filter = {
-    businessId
+    businessId,
   };
 
   if (type) {
@@ -90,49 +77,29 @@ export const getCategories = async ({
 
   return Category.find(filter)
     .select(
-      "_id name type description isActive isSystem createdBy updatedBy createdAt updatedAt"
+      "_id name type description isActive isSystem createdBy updatedBy createdAt updatedAt",
     )
-    .populate(
-      "createdBy",
-      "_id name email"
-    )
-    .populate(
-      "updatedBy",
-      "_id name email"
-    )
+    .populate("createdBy", "_id name email")
+    .populate("updatedBy", "_id name email")
     .sort({
       type: 1,
-      name: 1
+      name: 1,
     });
 };
 
-export const getCategoryById = async ({
-  businessId,
-  categoryId
-}) => {
-  const category =
-    await Category.findOne({
-      _id: categoryId,
-      businessId
-    })
-      .select(
-        "_id name type description isActive isSystem createdBy updatedBy createdAt updatedAt"
-      )
-      .populate(
-        "createdBy",
-        "_id name email"
-      )
-      .populate(
-        "updatedBy",
-        "_id name email"
-      );
+export const getCategoryById = async ({ businessId, categoryId }) => {
+  const category = await Category.findOne({
+    _id: categoryId,
+    businessId,
+  })
+    .select(
+      "_id name type description isActive isSystem createdBy updatedBy createdAt updatedAt",
+    )
+    .populate("createdBy", "_id name email")
+    .populate("updatedBy", "_id name email");
 
   if (!category) {
-    throw new AppError(
-      "Category not found",
-      404,
-      "CATEGORY_NOT_FOUND"
-    );
+    throw new AppError("Category not found", 404, "CATEGORY_NOT_FOUND");
   }
 
   return category;
@@ -143,112 +110,91 @@ export const updateCategory = async ({
   categoryId,
   userId,
   name,
-  description
+  description,
 }) => {
-  const category =
-    await Category.findOne({
-      _id: categoryId,
-      businessId
-    });
+  const category = await Category.findOne({
+    _id: categoryId,
+    businessId,
+  });
 
   if (!category) {
-    throw new AppError(
-      "Category not found",
-      404,
-      "CATEGORY_NOT_FOUND"
-    );
+    throw new AppError("Category not found", 404, "CATEGORY_NOT_FOUND");
   }
 
   if (category.isSystem) {
     throw new AppError(
       "System categories cannot be modified",
       403,
-      "SYSTEM_CATEGORY_MODIFICATION_FORBIDDEN"
+      "SYSTEM_CATEGORY_MODIFICATION_FORBIDDEN",
     );
   }
 
   if (name !== undefined) {
-    const normalizedName =
-      normalizeCategoryName(name);
+    const normalizedName = normalizeCategoryName(name);
 
-    const duplicate =
-      await Category.findOne({
-        _id: {
-          $ne: category._id
-        },
-        businessId,
-        type: category.type,
-        name: normalizedName
-      });
+    const duplicate = await Category.findOne({
+      _id: {
+        $ne: category._id,
+      },
+      businessId,
+      type: category.type,
+      name: normalizedName,
+    });
 
     if (duplicate) {
       throw new AppError(
         "A category with this name and type already exists",
         409,
-        "CATEGORY_ALREADY_EXISTS"
+        "CATEGORY_ALREADY_EXISTS",
       );
     }
 
-    category.name =
-      normalizedName;
+    category.name = normalizedName;
   }
 
   if (description !== undefined) {
-    category.description =
-      description;
+    category.description = description;
   }
 
-  category.updatedBy =
-    userId;
+  category.updatedBy = userId;
 
   await category.save();
 
   return category;
 };
 
-export const updateCategoryStatus =
-  async ({
+export const updateCategoryStatus = async ({
+  businessId,
+  categoryId,
+  userId,
+  isActive,
+}) => {
+  const category = await Category.findOne({
+    _id: categoryId,
     businessId,
-    categoryId,
-    userId,
-    isActive
-  }) => {
-    const category =
-      await Category.findOne({
-        _id: categoryId,
-        businessId
-      });
+  });
 
-    if (!category) {
-      throw new AppError(
-        "Category not found",
-        404,
-        "CATEGORY_NOT_FOUND"
-      );
-    }
+  if (!category) {
+    throw new AppError("Category not found", 404, "CATEGORY_NOT_FOUND");
+  }
 
-    if (category.isSystem) {
-      throw new AppError(
-        "System categories cannot be deactivated",
-        403,
-        "SYSTEM_CATEGORY_STATUS_FORBIDDEN"
-      );
-    }
+  if (category.isSystem) {
+    throw new AppError(
+      "System categories cannot be deactivated",
+      403,
+      "SYSTEM_CATEGORY_STATUS_FORBIDDEN",
+    );
+  }
 
-    category.isActive =
-      isActive;
+  category.isActive = isActive;
 
-    category.updatedBy =
-      userId;
+  category.updatedBy = userId;
 
-    await category.save();
+  await category.save();
 
-    return category;
-  };
+  return category;
+};
 
-const normalizeCategoryName =
-  (name) => {
-    return name
-      .trim()
-      .replace(/\s+/g, " ");
-  };
+const normalizeCategoryName = (name) => {
+  return name.trim().replace(/\s+/g, " ");
+};

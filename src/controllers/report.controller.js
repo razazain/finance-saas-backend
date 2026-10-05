@@ -3,135 +3,97 @@ import {
   getCashFlowReport,
   getCategoryBreakdownReport,
   getMonthlySummaryReport,
-  getAccountSummaryReport
+  getAccountSummaryReport,
 } from "../services/report.service.js";
 
-import {
-  successResponse
-} from "../utils/response.js";
+import { successResponse } from "../utils/response.js";
 
-import {
-  asyncHandler
-} from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const incomeExpense =
-  asyncHandler(
-    async (req, res) => {
-      const result =
-        await getIncomeExpenseReport({
-          businessId:
-            req.user.businessId,
+export const incomeExpense = asyncHandler(async (req, res) => {
+  const result = await getIncomeExpenseReport({
+    businessId: req.user.businessId,
 
-          ...req.validated.query
-        });
+    ...req.validated.query,
+  });
 
-      return successResponse({
-        res,
+  return successResponse({
+    res,
 
-        message:
-          "Income and expense report retrieved successfully",
+    message: "Income and expense report retrieved successfully",
 
-        data: result
-      });
-    }
-  );
+    data: result,
+  });
+});
 
-export const cashFlow =
-  asyncHandler(
-    async (req, res) => {
-      const result =
-        await getCashFlowReport({
-          businessId:
-            req.user.businessId,
+export const cashFlow = asyncHandler(async (req, res) => {
+  const result = await getCashFlowReport({
+    businessId: req.user.businessId,
 
-          ...req.validated.query
-        });
+    ...req.validated.query,
+  });
 
-      return successResponse({
-        res,
+  return successResponse({
+    res,
 
-        message:
-          "Cash flow report retrieved successfully",
+    message: "Cash flow report retrieved successfully",
 
-        data: {
-          cashFlow:
-            result
-        }
-      });
-    }
-  );
+    data: {
+      cashFlow: result,
+    },
+  });
+});
 
-export const categoryBreakdown =
-  asyncHandler(
-    async (req, res) => {
-      const result =
-        await getCategoryBreakdownReport({
-          businessId:
-            req.user.businessId,
+export const categoryBreakdown = asyncHandler(async (req, res) => {
+  const result = await getCategoryBreakdownReport({
+    businessId: req.user.businessId,
 
-          ...req.validated.query
-        });
+    ...req.validated.query,
+  });
 
-      return successResponse({
-        res,
+  return successResponse({
+    res,
 
-        message:
-          "Category breakdown report retrieved successfully",
+    message: "Category breakdown report retrieved successfully",
 
-        data: {
-          categories:
-            result
-        }
-      });
-    }
-  );
+    data: {
+      categories: result,
+    },
+  });
+});
 
-export const monthlySummary =
-  asyncHandler(
-    async (req, res) => {
-      const result =
-        await getMonthlySummaryReport({
-          businessId:
-            req.user.businessId,
+export const monthlySummary = asyncHandler(async (req, res) => {
+  const result = await getMonthlySummaryReport({
+    businessId: req.user.businessId,
 
-          ...req.validated.query
-        });
+    ...req.validated.query,
+  });
 
-      return successResponse({
-        res,
+  return successResponse({
+    res,
 
-        message:
-          "Monthly financial summary retrieved successfully",
+    message: "Monthly financial summary retrieved successfully",
 
-        data: {
-          months:
-            result
-        }
-      });
-    }
-  );
+    data: {
+      months: result,
+    },
+  });
+});
 
-export const accountSummary =
-  asyncHandler(
-    async (req, res) => {
-      const result =
-        await getAccountSummaryReport({
-          businessId:
-            req.user.businessId,
+export const accountSummary = asyncHandler(async (req, res) => {
+  const result = await getAccountSummaryReport({
+    businessId: req.user.businessId,
 
-          ...req.validated.query
-        });
+    ...req.validated.query,
+  });
 
-      return successResponse({
-        res,
+  return successResponse({
+    res,
 
-        message:
-          "Account summary report retrieved successfully",
+    message: "Account summary report retrieved successfully",
 
-        data: {
-          accounts:
-            result
-        }
-      });
-    }
-  );
+    data: {
+      accounts: result,
+    },
+  });
+});

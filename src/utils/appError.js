@@ -3,7 +3,7 @@ export class AppError extends Error {
     message,
     statusCode = 500,
     code = "INTERNAL_SERVER_ERROR",
-    details = null
+    details = null,
   ) {
     super(message);
 
@@ -13,9 +13,6 @@ export class AppError extends Error {
     this.details = details;
     this.isOperational = true;
 
-    Error.captureStackTrace(
-      this,
-      this.constructor
-    );
+    Error.captureStackTrace(this, this.constructor);
   }
 }

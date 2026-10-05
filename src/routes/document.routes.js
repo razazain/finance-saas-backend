@@ -2,12 +2,14 @@ import express from "express";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
+import { idempotency } from "../middleware/idempotency.middleware.js";
 import {
   initDocumentUploadSchema,
   completeDocumentUploadSchema,
   documentIdSchema,
   listDocumentSchema,
   convertDocumentSchema,
+  reviewDocumentSchema,
 } from "../validators/document.validator.js";
 import {
   initUpload,
@@ -17,6 +19,9 @@ import {
   process,
   convert,
   remove,
+  classify,
+  review,
+  content,
 } from "../controllers/document.controller.js";
 
 const router = express.Router();
@@ -62,6 +67,7 @@ router.post(
   authenticate,
   authorize("owner", "admin"),
   validate(convertDocumentSchema),
+  idempotency,
   convert,
 );
 router.delete(
@@ -72,4 +78,25 @@ router.delete(
   remove,
 );
 
+router.post(
+  "/:id/classify",
+  authenticate,
+  authorize(...staff),
+  validate(documentIdSchema),
+  classify,
+);
+router.patch(
+  "/:id/review",
+  authenticate,
+  authorize("owner", "admin", "employee"),
+  validate(reviewDocumentSchema),
+  review,
+);
+router.get(
+  "/:id/content",
+  authenticate,
+  authorize(...staff),
+  validate(documentIdSchema),
+  content,
+);
 export default router;

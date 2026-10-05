@@ -5,35 +5,24 @@ import {
   cashFlow,
   categoryBreakdown,
   accountBalances,
-  recentTransactions
+  recentTransactions,
 } from "../controllers/dashboard.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   dashboardDateRangeSchema,
   categoryBreakdownSchema,
-  recentTransactionsSchema
+  recentTransactionsSchema,
 } from "../validators/dashboard.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
-const dashboardRoles = [
-  "owner",
-  "admin",
-  "employee"
-];
+const dashboardRoles = ["owner", "admin", "employee"];
 
 /*
  * Dashboard summary.
@@ -41,13 +30,9 @@ const dashboardRoles = [
 router.get(
   "/summary",
   authenticate,
-  authorize(
-    ...dashboardRoles
-  ),
-  validate(
-    dashboardDateRangeSchema
-  ),
-  summary
+  authorize(...dashboardRoles),
+  validate(dashboardDateRangeSchema),
+  summary,
 );
 
 /*
@@ -56,13 +41,9 @@ router.get(
 router.get(
   "/cash-flow",
   authenticate,
-  authorize(
-    ...dashboardRoles
-  ),
-  validate(
-    dashboardDateRangeSchema
-  ),
-  cashFlow
+  authorize(...dashboardRoles),
+  validate(dashboardDateRangeSchema),
+  cashFlow,
 );
 
 /*
@@ -71,13 +52,9 @@ router.get(
 router.get(
   "/category-breakdown",
   authenticate,
-  authorize(
-    ...dashboardRoles
-  ),
-  validate(
-    categoryBreakdownSchema
-  ),
-  categoryBreakdown
+  authorize(...dashboardRoles),
+  validate(categoryBreakdownSchema),
+  categoryBreakdown,
 );
 
 /*
@@ -86,10 +63,8 @@ router.get(
 router.get(
   "/account-balances",
   authenticate,
-  authorize(
-    ...dashboardRoles
-  ),
-  accountBalances
+  authorize(...dashboardRoles),
+  accountBalances,
 );
 
 /*
@@ -98,13 +73,9 @@ router.get(
 router.get(
   "/recent-transactions",
   authenticate,
-  authorize(
-    ...dashboardRoles
-  ),
-  validate(
-    recentTransactionsSchema
-  ),
-  recentTransactions
+  authorize(...dashboardRoles),
+  validate(recentTransactionsSchema),
+  recentTransactions,
 );
 
 export default router;

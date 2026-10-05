@@ -1,27 +1,16 @@
 import express from "express";
 
-import {
-  getPartyLedgerController
-} from "../controllers/ledger.controller.js";
+import { getPartyLedgerController } from "../controllers/ledger.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
-import {
-  partyLedgerSchema
-} from "../validators/ledger.validator.js";
+import { partyLedgerSchema } from "../validators/ledger.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Get customer/vendor ledger.
@@ -31,17 +20,11 @@ router.get(
 
   authenticate,
 
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
+  authorize("owner", "admin", "employee"),
 
-  validate(
-    partyLedgerSchema
-  ),
+  validate(partyLedgerSchema),
 
-  getPartyLedgerController
+  getPartyLedgerController,
 );
 
 export default router;

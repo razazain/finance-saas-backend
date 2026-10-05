@@ -1,4 +1,5 @@
 import Account from "../models/Account.js";
+import Decimal from "decimal.js";
 import Business from "../models/Bussiness.js";
 
 import { AppError } from "../utils/appError.js";
@@ -10,91 +11,72 @@ export const createAccount = async ({
   type,
   description,
   currency,
-  openingBalance
+  openingBalance,
 }) => {
-  const business =
-    await Business.findOne({
-      _id: businessId,
-      isActive: true
-    }).select(
-      "_id currency"
-    );
+  const business = await Business.findOne({
+    _id: businessId,
+    isActive: true,
+  }).select("_id currency");
 
   if (!business) {
-    throw new AppError(
-      "Business not found",
-      404,
-      "BUSINESS_NOT_FOUND"
-    );
+    throw new AppError("Business not found", 404, "BUSINESS_NOT_FOUND");
   }
 
-  const normalizedName =
-    normalizeAccountName(name);
+  const normalizedName = normalizeAccountName(name);
 
-  const existingAccount =
-    await Account.findOne({
-      businessId,
-      name: normalizedName
-    });
+  const existingAccount = await Account.findOne({
+    businessId,
+    name: normalizedName,
+  });
 
   if (existingAccount) {
     throw new AppError(
       "An account with this name already exists",
       409,
-      "ACCOUNT_ALREADY_EXISTS"
+      "ACCOUNT_ALREADY_EXISTS",
     );
   }
 
-  const accountCurrency =
-    business.currency;
+  const accountCurrency = currency || business.currency;
+  if (!/^[A-Z]{3}$/.test(accountCurrency))
+    throw new AppError(
+      "Currency must be a 3-letter code",
+      400,
+      "INVALID_CURRENCY",
+    );
 
-  const opening =
-    openingBalance || "0";
+  const opening = openingBalance || "0";
 
-  const account =
-    await Account.create({
-      businessId,
+  const account = await Account.create({
+    businessId,
 
-      name:
-        normalizedName,
+    name: normalizedName,
 
-      type,
+    type,
 
-      description:
-        description || null,
+    description: description || null,
 
-      currency:
-        accountCurrency,
+    currency: accountCurrency,
 
-      openingBalance:
-        opening,
+    openingBalance: opening,
 
-      currentBalance:
-        opening,
+    currentBalance: opening,
 
-      isActive: true,
+    isActive: true,
 
-      isSystem: false,
+    isSystem: false,
 
-      createdBy:
-        userId,
+    createdBy: userId,
 
-      updatedBy:
-        userId
-    });
+    updatedBy: userId,
+  });
 
-  return formatAccount(
-    account
-  );
+  return formatAccount(account);
 };
 
-export const getAccounts = async ({
-  businessId,
-  type,
-  isActive
-}) => {
+export const getAccounts = async ({ businessId, type, isActive }) => {
   const filter = {
-    businessId
+    businessId,
   };
 
   if (type) {
@@ -102,231 +84,159 @@ export const getAccounts = async ({
   }
 
   if (isActive !== undefined) {
-    filter.isActive =
-      isActive;
+    filter.isActive = isActive;
   }
 
-  const accounts =
-    await Account.find(filter)
-      .select(
-        "_id name type description currency openingBalance currentBalance isActive isSystem createdBy updatedBy createdAt updatedAt"
-      )
-      .populate(
-        "createdBy",
-        "_id name email"
-      )
-      .populate(
-        "updatedBy",
-        "_id name email"
-      )
-      .sort({
-        type: 1,
-        name: 1
-      });
+  const accounts = await Account.find(filter)
+    .select(
+      "_id name type description currency openingBalance currentBalance isActive isSystem createdBy updatedBy createdAt updatedAt",
+    )
+    .populate("createdBy", "_id name email")
+    .populate("updatedBy", "_id name email")
+    .sort({
+      type: 1,
+      name: 1,
+    });
 
-  return accounts.map(
-    formatAccount
-  );
+  return accounts.map(formatAccount);
 };
 
-export const getAccountById =
-  async ({
+export const getAccountById = async ({ businessId, accountId }) => {
+  const account = await Account.findOne({
+    _id: accountId,
     businessId,
-    accountId
-  }) => {
-    const account =
-      await Account.findOne({
-        _id: accountId,
-        businessId
-      })
-        .select(
-          "_id name type description currency openingBalance currentBalance isActive isSystem createdBy updatedBy createdAt updatedAt"
-        )
-        .populate(
-          "createdBy",
-          "_id name email"
-        )
-        .populate(
-          "updatedBy",
-          "_id name email"
-        );
+  })
+    .select(
+      "_id name type description currency openingBalance currentBalance isActive isSystem createdBy updatedBy createdAt updatedAt",
+    )
+    .populate("createdBy", "_id name email")
+    .populate("updatedBy", "_id name email");
 
-    if (!account) {
-      throw new AppError(
-        "Account not found",
-        404,
-        "ACCOUNT_NOT_FOUND"
-      );
-    }
+  if (!account) {
+    throw new AppError("Account not found", 404, "ACCOUNT_NOT_FOUND");
+  }
 
-    return formatAccount(
-      account
-    );
-  };
+  return formatAccount(account);
+};
 
-export const updateAccount =
-  async ({
+export const updateAccount = async ({
+  businessId,
+  accountId,
+  userId,
+  name,
+  description,
+}) => {
+  const account = await Account.findOne({
+    _id: accountId,
     businessId,
-    accountId,
-    userId,
-    name,
-    description
-  }) => {
-    const account =
-      await Account.findOne({
-        _id: accountId,
-        businessId
-      });
+  });
 
-    if (!account) {
-      throw new AppError(
-        "Account not found",
-        404,
-        "ACCOUNT_NOT_FOUND"
-      );
-    }
+  if (!account) {
+    throw new AppError("Account not found", 404, "ACCOUNT_NOT_FOUND");
+  }
 
-    if (account.isSystem) {
-      throw new AppError(
-        "System accounts cannot be modified",
-        403,
-        "SYSTEM_ACCOUNT_MODIFICATION_FORBIDDEN"
-      );
-    }
-
-    if (name !== undefined) {
-      const normalizedName =
-        normalizeAccountName(
-          name
-        );
-
-      const duplicate =
-        await Account.findOne({
-          _id: {
-            $ne: account._id
-          },
-
-          businessId,
-
-          name:
-            normalizedName
-        });
-
-      if (duplicate) {
-        throw new AppError(
-          "An account with this name already exists",
-          409,
-          "ACCOUNT_ALREADY_EXISTS"
-        );
-      }
-
-      account.name =
-        normalizedName;
-    }
-
-    if (
-      description !==
-      undefined
-    ) {
-      account.description =
-        description;
-    }
-
-    account.updatedBy =
-      userId;
-
-    await account.save();
-
-    return formatAccount(
-      account
+  if (account.isSystem) {
+    throw new AppError(
+      "System accounts cannot be modified",
+      403,
+      "SYSTEM_ACCOUNT_MODIFICATION_FORBIDDEN",
     );
-  };
+  }
 
-export const updateAccountStatus =
-  async ({
+  if (name !== undefined) {
+    const normalizedName = normalizeAccountName(name);
+
+    const duplicate = await Account.findOne({
+      _id: {
+        $ne: account._id,
+      },
+
+      businessId,
+
+      name: normalizedName,
+    });
+
+    if (duplicate) {
+      throw new AppError(
+        "An account with this name already exists",
+        409,
+        "ACCOUNT_ALREADY_EXISTS",
+      );
+    }
+
+    account.name = normalizedName;
+  }
+
+  if (description !== undefined) {
+    account.description = description;
+  }
+
+  account.updatedBy = userId;
+
+  await account.save();
+
+  return formatAccount(account);
+};
+
+export const updateAccountStatus = async ({
+  businessId,
+  accountId,
+  userId,
+  isActive,
+}) => {
+  const account = await Account.findOne({
+    _id: accountId,
     businessId,
-    accountId,
-    userId,
-    isActive
-  }) => {
-    const account =
-      await Account.findOne({
-        _id: accountId,
-        businessId
-      });
+  });
 
-    if (!account) {
-      throw new AppError(
-        "Account not found",
-        404,
-        "ACCOUNT_NOT_FOUND"
-      );
-    }
+  if (!account) {
+    throw new AppError("Account not found", 404, "ACCOUNT_NOT_FOUND");
+  }
 
-    if (account.isSystem) {
-      throw new AppError(
-        "System accounts cannot be deactivated",
-        403,
-        "SYSTEM_ACCOUNT_STATUS_FORBIDDEN"
-      );
-    }
-
-    /*
-     * An account with financial activity
-     * should not eventually be deleted.
-     *
-     * Deactivation is the correct approach.
-     */
-    account.isActive =
-      isActive;
-
-    account.updatedBy =
-      userId;
-
-    await account.save();
-
-    return formatAccount(
-      account
+  if (account.isSystem) {
+    throw new AppError(
+      "System accounts cannot be deactivated",
+      403,
+      "SYSTEM_ACCOUNT_STATUS_FORBIDDEN",
     );
+  }
+
+  if (!isActive && new Decimal(account.currentBalance.toString()).neq(0)) {
+    throw new AppError(
+      "Account with a non-zero balance cannot be deactivated",
+      409,
+      "ACCOUNT_NONZERO_BALANCE",
+    );
+  }
+  account.isActive = isActive;
+
+  account.updatedBy = userId;
+
+  await account.save();
+
+  return formatAccount(account);
+};
+
+const normalizeAccountName = (name) => {
+  return name.trim().replace(/\s+/g, " ");
+};
+
+const formatDecimal = (value) => {
+  if (value === null || value === undefined) {
+    return "0";
+  }
+
+  return value.toString();
+};
+
+const formatAccount = (account) => {
+  const object = account.toObject ? account.toObject() : account;
+
+  return {
+    ...object,
+
+    openingBalance: formatDecimal(object.openingBalance),
+
+    currentBalance: formatDecimal(object.currentBalance),
   };
-
-const normalizeAccountName =
-  (name) => {
-    return name
-      .trim()
-      .replace(/\s+/g, " ");
-  };
-
-const formatDecimal =
-  (value) => {
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return "0";
-    }
-
-    return value.toString();
-  };
-
-const formatAccount =
-  (account) => {
-    const object =
-      account.toObject
-        ? account.toObject()
-        : account;
-
-    return {
-      ...object,
-
-      openingBalance:
-        formatDecimal(
-          object.openingBalance
-        ),
-
-      currentBalance:
-        formatDecimal(
-          object.currentBalance
-        )
-    };
-  };
+};

@@ -21,41 +21,39 @@ import ledgerRoutes from "./routes/ledger.routes.js";
 import recurringTransactionRoutes from "./routes/recurringTransaction.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import documentRoutes from "./routes/document.routes.js";
+import mvpRoutes from "./routes/mvp.routes.js";
+import { auditRequest } from "./middleware/audit.middleware.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
 app.use(cookieParser());
+app.use(auditRequest);
 app.use(helmet());
-
 
 app.use(
   cors({
     origin: env.CLIENT_URL,
-    credentials: true
-  })
+    credentials: true,
+  }),
 );
 /*
  * General rate limiting
  */
-const generalLimiter =
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 200,
-    standardHeaders: "draft-8",
-    legacyHeaders: false,
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 200,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
 
-    message: {
-      success: false,
-      code: "RATE_LIMIT_EXCEEDED",
-      message:
-        "Too many requests. Please try again later."
-    }
-  });
+  message: {
+    success: false,
+    code: "RATE_LIMIT_EXCEEDED",
+    message: "Too many requests. Please try again later.",
+  },
+});
 
-app.use(
-  generalLimiter
-);
+app.use(generalLimiter);
 
 /*
  * Body size limits
@@ -66,29 +64,24 @@ app.use(
  */
 app.use(
   express.json({
-    limit: "100kb"
-  })
+    limit: "100kb",
+  }),
 );
 
 app.use(
   express.urlencoded({
     extended: false,
-    limit: "100kb"
-  })
+    limit: "100kb",
+  }),
 );
 
-app.get(
-  "/health",
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: "Finance SaaS API is healthy",
-      environment: env.NODE_ENV
-    });
-  }
-);
-
-
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Finance SaaS API is healthy",
+    environment: env.NODE_ENV,
+  });
+});
 
 /*
  * API routes
@@ -109,19 +102,18 @@ app.use("/api/v1", ledgerRoutes);
 app.use("/api/v1/recurring-transactions", recurringTransactionRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/documents", documentRoutes);
+app.use("/api/v1", mvpRoutes);
 
 /*
  * 404 handler
  */
-app.use(
-  (req, res) => {
-    res.status(404).json({
-      success: false,
-      code: "ROUTE_NOT_FOUND",
-      message: `Route ${req.method} ${req.originalUrl} not found`
-    });
-  }
-);
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    code: "ROUTE_NOT_FOUND",
+    message: `Route ${req.method} ${req.originalUrl} not found`,
+  });
+});
 
 /*
  * Global error handler
@@ -129,8 +121,6 @@ app.use(
  * This must be registered after
  * all routes.
  */
-app.use(
-  errorMiddleware
-);
+app.use(errorMiddleware);
 
 export default app;

@@ -25,22 +25,18 @@ const registerBodySchema = z.object({
     .min(2, "Business name must be at least 2 characters")
     .max(100, "Business name cannot exceed 100 characters"),
 
-  country: z
-    .string()
-    .trim()
-    .max(100)
-    .optional(),
+  country: z.string().trim().max(100).optional(),
 
   currency: z
     .string()
     .trim()
     .length(3, "Currency must contain 3 characters")
     .transform((value) => value.toUpperCase())
-    .default("PKR")
+    .default("PKR"),
 });
 
 export const registerSchema = z.object({
-  body: registerBodySchema
+  body: registerBodySchema,
 });
 
 const loginBodySchema = z.object({
@@ -51,12 +47,13 @@ const loginBodySchema = z.object({
     .max(254)
     .transform((value) => value.toLowerCase()),
 
-  password: z
+  password: z.string().min(1, "Password is required").max(72),
+  mfaCode: z
     .string()
-    .min(1, "Password is required")
-    .max(72)
+    .regex(/^\d{6}$/)
+    .optional(),
 });
 
 export const loginSchema = z.object({
-  body: loginBodySchema
+  body: loginBodySchema,
 });

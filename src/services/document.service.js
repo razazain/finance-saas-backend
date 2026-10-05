@@ -11,6 +11,7 @@ import { processDocumentWithOcr } from "./ocr.service.js";
 import { createInvoice } from "./invoice.service.js";
 import { createBill } from "./bill.service.js";
 import { createTransaction } from "./transaction.service.js";
+import Transaction from "../models/Transaction.js";
 
 const toObject = (doc) => (doc?.toObject ? doc.toObject() : doc);
 
@@ -200,6 +201,40 @@ export const convertDocument = async ({
       409,
       "DOCUMENT_ALREADY_CONVERTED",
     );
+  if (document.conversion.status === "processing")
+    throw new AppError(
+      "Document conversion is already in progress",
+      409,
+      "DOCUMENT_CONVERSION_IN_PROGRESS",
+    );
+  document.conversion = {
+    status: "processing",
+    targetType: payload.targetType,
+    targetId: null,
+    convertedAt: null,
+    convertedBy: userId,
+  };
+  await document.save();
+  const existingSourceFilter = { businessId, sourceDocumentId: document._id };
+  const Existing =
+    payload.targetType === "invoice"
+      ? Invoice
+      : payload.targetType === "bill"
+        ? Bill
+        : Transaction;
+  const existingRecord =
+    await Existing.findOne(existingSourceFilter).select("_id");
+  if (existingRecord) {
+    document.conversion = {
+      status: "converted",
+      targetType: payload.targetType,
+      targetId: existingRecord._id,
+      convertedAt: new Date(),
+      convertedBy: userId,
+    };
+    await document.save();
+    return { document: toObject(document), record: existingRecord };
+  }
 
   const amount = payload.amount || extractedAmount(document);
   if (!amount)
@@ -219,64 +254,83 @@ export const convertDocument = async ({
   let result;
   let targetId;
 
-  if (payload.targetType === "invoice") {
-    result = await createInvoice({
-      businessId,
-      userId,
-      customerId: payload.customerId,
-      issueDate: date,
-      dueDate: payload.dueDate || date,
-      items: [
-        {
-          description,
-          quantity: "1",
-          unitPrice: amount,
-          categoryId: payload.categoryId,
-        },
-      ],
-    });
-    targetId = result.id || result._id;
-  } else if (payload.targetType === "bill") {
-    result = await createBill({
-      businessId,
-      userId,
-      vendorId: payload.vendorId,
-      billDate: date,
-      dueDate: payload.dueDate || date,
-      items: [
-        {
-          description,
-          quantity: "1",
-          unitPrice: amount,
-          categoryId: payload.categoryId,
-        },
-      ],
-    });
-    targetId = result.id || result._id;
-  } else {
-    result = await createTransaction({
-      businessId,
-      userId,
-      type: payload.type,
-      amount,
-      accountId: payload.accountId,
-      categoryId: payload.categoryId,
-      transactionDate: date,
-      description,
-      reference: payload.reference || document.originalFileName,
-    });
-    targetId = result.id || result._id;
-  }
+  try {
+    if (payload.targetType === "invoice") {
+      result = await createInvoice({
+        businessId,
+        userId,
+        customerId: payload.customerId,
+        issueDate: date,
+        dueDate: payload.dueDate || date,
+        items: [
+          {
+            description,
+            quantity: "1",
+            unitPrice: amount,
+            categoryId: payload.categoryId,
+          },
+        ],
+        sourceDocumentId: document._id,
+      });
+      targetId = result.id || result._id;
+    } else if (payload.targetType === "bill") {
+      result = await createBill({
+        businessId,
+        userId,
+        vendorId: payload.vendorId,
+        billDate: date,
+        dueDate: payload.dueDate || date,
+        items: [
+          {
+            description,
+            quantity: "1",
+            unitPrice: amount,
+            categoryId: payload.categoryId,
+          },
+        ],
+        sourceDocumentId: document._id,
+      });
+      targetId = result.id || result._id;
+    } else {
+      result = await createTransaction({
+        businessId,
+        userId,
+        type: payload.type,
+        amount,
+        accountId: payload.accountId,
+        categoryId: payload.categoryId,
+        transactionDate: date,
+        description,
+        reference: payload.reference || document.originalFileName,
+        sourceDocumentId: document._id,
+      });
+      targetId = result.id || result._id;
+    }
 
-  document.conversion = {
-    status: "converted",
-    targetType: payload.targetType,
-    targetId,
-    convertedAt: new Date(),
-    convertedBy: userId,
-  };
-  await document.save();
-  return { document: toObject(document), record: result };
+    document.conversion = {
+      status: "converted",
+      targetType: payload.targetType,
+      targetId,
+      convertedAt: new Date(),
+      convertedBy: userId,
+    };
+    await document.save();
+    return { document: toObject(document), record: result };
+  } catch (error) {
+    await Document.updateOne(
+      { _id: documentId, businessId },
+      {
+        $set: {
+          "conversion.status": "not_converted",
+          "conversion.targetType": null,
+          "conversion.targetId": null,
+          "conversion.convertedAt": null,
+          "conversion.convertedBy": null,
+        },
+      },
+    ).catch(() => {});
+    throw error;
+  }
 };
 
 export const deleteDocument = async ({ businessId, documentId }) => {

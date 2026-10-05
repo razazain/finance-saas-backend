@@ -6,60 +6,53 @@ const refreshTokenSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true
+      index: true,
     },
 
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
       required: true,
-      index: true
+      index: true,
     },
 
     tokenHash: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
 
     expiresAt: {
       type: Date,
       required: true,
-      
     },
 
     revokedAt: {
       type: Date,
-      default: null
+      default: null,
     },
 
     createdByIp: {
       type: String,
-      default: null
+      default: null,
     },
 
     userAgent: {
       type: String,
-      default: null
-    }
+      default: null,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 /*
  * MongoDB automatically removes expired
  * refresh-token records.
  */
-refreshTokenSchema.index(
-  { expiresAt: 1 },
-  { expireAfterSeconds: 0 }
-);
+refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-const RefreshToken = mongoose.model(
-  "RefreshToken",
-  refreshTokenSchema
-);
+const RefreshToken = mongoose.model("RefreshToken", refreshTokenSchema);
 
 export default RefreshToken;

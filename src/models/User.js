@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
       required: true,
-      index: true
+      index: true,
     },
 
     name: {
@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: 2,
-      maxlength: 100
+      maxlength: 100,
     },
 
     email: {
@@ -23,43 +23,35 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       maxlength: 254,
-      unique: true
+      unique: true,
     },
 
     password: {
       type: String,
       required: true,
-      select: false
+      select: false,
     },
 
     role: {
       type: String,
-      enum: [
-        "owner",
-        "admin",
-        "employee"
-      ],
-      default: "owner"
+      enum: ["owner", "admin", "employee"],
+      default: "owner",
     },
 
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
-    lastLoginAt: {
-      type: Date,
-      default: null
-    }
+    lastLoginAt: { type: Date, default: null },
+    emailVerifiedAt: { type: Date, default: null },
+    mfaEnabled: { type: Boolean, default: false },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
-const User = mongoose.model(
-  "User",
-  userSchema
-);
+const User = mongoose.model("User", userSchema);
 
 export default User;

@@ -65,10 +65,24 @@ const documentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+    classification: {
+      type: String,
+      enum: [
+        "invoice",
+        "bill",
+        "receipt",
+        "expense",
+        "income",
+        "statement",
+        "unknown",
+      ],
+      default: "unknown",
+    },
+    classificationConfidence: { type: Number, min: 0, max: 1, default: 0 },
     conversion: {
       status: {
         type: String,
-        enum: ["not_converted", "converted"],
+        enum: ["not_converted", "processing", "converted"],
         default: "not_converted",
       },
       targetType: {

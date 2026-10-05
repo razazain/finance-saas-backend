@@ -5,31 +5,24 @@ import {
   list,
   getOne,
   update,
-  updateStatus
+  updateStatus,
 } from "../controllers/invoice.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   createInvoiceSchema,
   listInvoiceSchema,
   invoiceIdSchema,
   updateInvoiceSchema,
-  updateInvoiceStatusSchema
+  updateInvoiceStatusSchema,
 } from "../validators/invoice.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Create invoice.
@@ -39,15 +32,9 @@ const router =
 router.post(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    createInvoiceSchema
-  ),
-  create
+  authorize("owner", "admin", "employee"),
+  validate(createInvoiceSchema),
+  create,
 );
 
 /*
@@ -56,15 +43,9 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    listInvoiceSchema
-  ),
-  list
+  authorize("owner", "admin", "employee"),
+  validate(listInvoiceSchema),
+  list,
 );
 
 /*
@@ -73,15 +54,9 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    invoiceIdSchema
-  ),
-  getOne
+  authorize("owner", "admin", "employee"),
+  validate(invoiceIdSchema),
+  getOne,
 );
 
 /*
@@ -93,15 +68,9 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    updateInvoiceSchema
-  ),
-  update
+  authorize("owner", "admin", "employee"),
+  validate(updateInvoiceSchema),
+  update,
 );
 
 /*
@@ -113,14 +82,9 @@ router.patch(
 router.patch(
   "/:id/status",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    updateInvoiceStatusSchema
-  ),
-  updateStatus
+  authorize("owner", "admin"),
+  validate(updateInvoiceStatusSchema),
+  updateStatus,
 );
 
 export default router;

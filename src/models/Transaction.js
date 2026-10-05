@@ -157,6 +157,13 @@ const transactionSchema = new mongoose.Schema(
       default: null,
     },
 
+    sourceDocumentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Document",
+      default: null,
+      index: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

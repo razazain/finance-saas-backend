@@ -2,25 +2,10 @@ node_modules/
 .env
 .env.*
 !.env.example
+ocr-service/venv
+ocr-service/.env
+ocr-service/__pycache__/
 
-logs/
-uploads/
-tmp/
-
+*.pyc
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
 .DS_Store
-Thumbs.db
-
-# Python OCR environment
-ocr-service/venv/
-
-# Python cache
-__pycache__/
-*.py[cod]
-
-# OCR generated files
-ocr-service/output/
-ocr-service/tmp/

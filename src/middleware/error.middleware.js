@@ -1,17 +1,14 @@
 import mongoose from "mongoose";
 import { env } from "../config/env.js";
 
-export const errorMiddleware = (
-  error,
-  req,
-  res,
-  next
-) => {
+export const errorMiddleware = (error, req, res, next) => {
   if (env.NODE_ENV === "development") {
     console.error(error);
   } else {
     // Minimize sensitive output in production logs
-    console.error(`Error: ${error.message} (${error.code || error.statusCode || "ERR"})`);
+    console.error(
+      `Error: ${error.message} (${error.code || error.statusCode || "ERR"})`,
+    );
   }
 
   let statusCode = error.statusCode || 500;
@@ -42,11 +39,11 @@ export const errorMiddleware = (
     message,
 
     ...(error.details && {
-      errors: error.details
+      errors: error.details,
     }),
 
     ...(env.NODE_ENV === "development" && {
-      stack: error.stack
-    })
+      stack: error.stack,
+    }),
   });
 };

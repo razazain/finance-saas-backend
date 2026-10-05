@@ -3,28 +3,23 @@ import express from "express";
 import {
   create,
   list,
-  getOne
+  getOne,
+  reverse,
 } from "../controllers/invoicePayment.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { idempotency } from "../middleware/idempotency.middleware.js";
 
 import {
   createInvoicePaymentSchema,
-  invoicePaymentIdSchema
+  invoicePaymentIdSchema,
 } from "../validators/invoicePayment.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Record invoice payment.
@@ -34,15 +29,10 @@ const router =
 router.post(
   "/invoices/:id/payments",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    createInvoicePaymentSchema
-  ),
-  create
+  authorize("owner", "admin", "employee"),
+  validate(createInvoicePaymentSchema),
+  idempotency,
+  create,
 );
 
 /*
@@ -52,15 +42,9 @@ router.post(
 router.get(
   "/invoices/:id/payments",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    invoicePaymentIdSchema
-  ),
-  list
+  authorize("owner", "admin", "employee"),
+  validate(invoicePaymentIdSchema),
+  list,
 );
 
 /*
@@ -69,15 +53,16 @@ router.get(
 router.get(
   "/payments/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    invoicePaymentIdSchema
-  ),
-  getOne
+  authorize("owner", "admin", "employee"),
+  validate(invoicePaymentIdSchema),
+  getOne,
 );
 
+router.post(
+  "/payments/:id/reverse",
+  authenticate,
+  authorize("owner", "admin"),
+  validate(invoicePaymentIdSchema),
+  reverse,
+);
 export default router;

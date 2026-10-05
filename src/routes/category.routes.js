@@ -5,31 +5,24 @@ import {
   list,
   getOne,
   update,
-  updateStatus
+  updateStatus,
 } from "../controllers/category.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   createCategorySchema,
   listCategorySchema,
   categoryIdSchema,
   updateCategorySchema,
-  updateCategoryStatusSchema
+  updateCategoryStatusSchema,
 } from "../validators/category.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Create category
@@ -39,14 +32,9 @@ const router =
 router.post(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    createCategorySchema
-  ),
-  create
+  authorize("owner", "admin"),
+  validate(createCategorySchema),
+  create,
 );
 
 /*
@@ -57,15 +45,9 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    listCategorySchema
-  ),
-  list
+  authorize("owner", "admin", "employee"),
+  validate(listCategorySchema),
+  list,
 );
 
 /*
@@ -74,15 +56,9 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    categoryIdSchema
-  ),
-  getOne
+  authorize("owner", "admin", "employee"),
+  validate(categoryIdSchema),
+  getOne,
 );
 
 /*
@@ -91,14 +67,9 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    updateCategorySchema
-  ),
-  update
+  authorize("owner", "admin"),
+  validate(updateCategorySchema),
+  update,
 );
 
 /*
@@ -107,14 +78,9 @@ router.patch(
 router.patch(
   "/:id/status",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    updateCategoryStatusSchema
-  ),
-  updateStatus
+  authorize("owner", "admin"),
+  validate(updateCategoryStatusSchema),
+  updateStatus,
 );
 
 export default router;

@@ -5,94 +5,63 @@ import {
   cashFlow,
   categoryBreakdown,
   monthlySummary,
-  accountSummary
+  accountSummary,
 } from "../controllers/report.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   reportDateRangeSchema,
   reportCategoryBreakdownSchema,
-  reportAccountSummarySchema
+  reportAccountSummarySchema,
 } from "../validators/report.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
-const reportRoles = [
-  "owner",
-  "admin",
-  "employee"
-];
+const reportRoles = ["owner", "admin", "employee"];
 
 router.get(
   "/income-expense",
   authenticate,
-  authorize(
-    ...reportRoles
-  ),
-  validate(
-    reportDateRangeSchema
-  ),
-  incomeExpense
+  authorize(...reportRoles),
+  validate(reportDateRangeSchema),
+  incomeExpense,
 );
 
 router.get(
   "/cash-flow",
   authenticate,
-  authorize(
-    ...reportRoles
-  ),
-  validate(
-    reportDateRangeSchema
-  ),
-  cashFlow
+  authorize(...reportRoles),
+  validate(reportDateRangeSchema),
+  cashFlow,
 );
 
 router.get(
   "/category-breakdown",
   authenticate,
-  authorize(
-    ...reportRoles
-  ),
-  validate(
-    reportCategoryBreakdownSchema
-  ),
-  categoryBreakdown
+  authorize(...reportRoles),
+  validate(reportCategoryBreakdownSchema),
+  categoryBreakdown,
 );
 
 router.get(
   "/monthly-summary",
   authenticate,
-  authorize(
-    ...reportRoles
-  ),
-  validate(
-    reportDateRangeSchema
-  ),
-  monthlySummary
+  authorize(...reportRoles),
+  validate(reportDateRangeSchema),
+  monthlySummary,
 );
 
 router.get(
   "/account-summary",
   authenticate,
-  authorize(
-    ...reportRoles
-  ),
-  validate(
-    reportAccountSummarySchema
-  ),
-  accountSummary
+  authorize(...reportRoles),
+  validate(reportAccountSummarySchema),
+  accountSummary,
 );
 
 export default router;

@@ -2,150 +2,165 @@ import {
   registerUser,
   loginUser,
   refreshUserToken,
-  logoutUser
+  logoutUser,
 } from "../services/auth.service.js";
 
-import {
-  successResponse
-} from "../utils/response.js";
+import { successResponse } from "../utils/response.js";
 
-import {
-  asyncHandler
-} from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { env } from "../config/env.js";
+import {
+  verifyEmail,
+  resendVerification,
+  requestPasswordReset,
+  resetPassword,
+  setupMfa,
+  enableMfa,
+  disableMfa,
+} from "../services/security.service.js";
 
 const refreshCookieOptions = {
   httpOnly: true,
   secure: env.NODE_ENV === "production",
   sameSite: "strict",
   path: "/api/v1/auth",
-  maxAge:
-    7 *
-    24 *
-    60 *
-    60 *
-    1000
+  maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export const register =
-  asyncHandler(async (req, res) => {
-    const result =
-      await registerUser(
-        req.validated.body
-      );
+export const register = asyncHandler(async (req, res) => {
+  const result = await registerUser(req.validated.body);
 
-    res.cookie(
-      "refreshToken",
-      result.refreshToken,
-      refreshCookieOptions
-    );
+  res.cookie("refreshToken", result.refreshToken, refreshCookieOptions);
 
-    return successResponse({
-      res,
-      statusCode: 201,
-      message:
-        "Account created successfully",
-      data: {
-        user: result.user,
-        business:
-          result.business,
-        accessToken:
-          result.accessToken
-      }
-    });
+  return successResponse({
+    res,
+    statusCode: 201,
+    message: "Account created successfully",
+    data: {
+      user: result.user,
+      business: result.business,
+      accessToken: result.accessToken,
+    },
+  });
+});
+
+export const login = asyncHandler(async (req, res) => {
+  const result = await loginUser({
+    ...req.validated.body,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
   });
 
-export const login =
-  asyncHandler(async (req, res) => {
-    const result =
-      await loginUser({
-        ...req.validated.body,
-        ip: req.ip,
-        userAgent:
-          req.get("user-agent")
-      });
+  res.cookie("refreshToken", result.refreshToken, refreshCookieOptions);
 
-    res.cookie(
-      "refreshToken",
-      result.refreshToken,
-      refreshCookieOptions
-    );
+  return successResponse({
+    res,
+    message: "Login successful",
+    data: {
+      user: result.user,
+      business: result.business,
+      accessToken: result.accessToken,
+    },
+  });
+});
 
-    return successResponse({
-      res,
-      message:
-        "Login successful",
-      data: {
-        user: result.user,
-        business:
-          result.business,
-        accessToken:
-          result.accessToken
-      }
+export const refresh = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({
+      success: false,
+      code: "REFRESH_TOKEN_REQUIRED",
+      message: "Refresh token is required",
     });
+  }
+
+  const result = await refreshUserToken({
+    refreshToken,
   });
 
-export const refresh =
-  asyncHandler(async (req, res) => {
-    const refreshToken =
-      req.cookies?.refreshToken;
+  res.cookie("refreshToken", result.refreshToken, refreshCookieOptions);
 
-    if (!refreshToken) {
-      return res.status(401).json({
-        success: false,
-        code:
-          "REFRESH_TOKEN_REQUIRED",
-        message:
-          "Refresh token is required"
-      });
-    }
+  return successResponse({
+    res,
+    message: "Token refreshed successfully",
+    data: {
+      accessToken: result.accessToken,
+    },
+  });
+});
 
-    const result =
-      await refreshUserToken({
-        refreshToken
-      });
+export const logout = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
 
-    res.cookie(
-      "refreshToken",
-      result.refreshToken,
-      refreshCookieOptions
-    );
-
-    return successResponse({
-      res,
-      message:
-        "Token refreshed successfully",
-      data: {
-        accessToken:
-          result.accessToken
-      }
-    });
+  await logoutUser({
+    refreshToken,
   });
 
-export const logout =
-  asyncHandler(async (req, res) => {
-    const refreshToken =
-      req.cookies?.refreshToken;
-
-    await logoutUser({
-      refreshToken
-    });
-
-    res.clearCookie(
-      "refreshToken",
-      {
-        httpOnly: true,
-        secure:
-          env.NODE_ENV ===
-          "production",
-        sameSite: "strict",
-        path: "/api/v1/auth"
-      }
-    );
-
-    return successResponse({
-      res,
-      message:
-        "Logout successful"
-    });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/api/v1/auth",
   });
+
+  return successResponse({
+    res,
+    message: "Logout successful",
+  });
+});
+export const verifyEmailController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "Email verified successfully",
+    data: await verifyEmail(req.validated.body.token),
+  }),
+);
+export const resendVerificationController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "Verification email sent",
+    data: await resendVerification(req.user.userId),
+  }),
+);
+export const requestPasswordResetController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "If the account exists, a reset email has been sent",
+    data: await requestPasswordReset(req.validated.body.email),
+  }),
+);
+export const resetPasswordController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "Password reset successfully",
+    data: await resetPassword(req.validated.body),
+  }),
+);
+export const setupMfaController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "MFA setup generated",
+    data: await setupMfa(req.user),
+  }),
+);
+export const enableMfaController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "MFA enabled",
+    data: await enableMfa({
+      userId: req.user.userId,
+      code: req.validated.body.code,
+    }),
+  }),
+);
+export const disableMfaController = asyncHandler(async (req, res) =>
+  successResponse({
+    res,
+    message: "MFA disabled",
+    data: await disableMfa({
+      userId: req.user.userId,
+      code: req.validated.body.code,
+    }),
+  }),
+);

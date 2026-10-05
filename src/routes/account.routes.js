@@ -5,31 +5,24 @@ import {
   list,
   getOne,
   update,
-  updateStatus
+  updateStatus,
 } from "../controllers/account.controller.js";
 
-import {
-  authenticate
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize
-} from "../middleware/authorize.middleware.js";
+import { authorize } from "../middleware/authorize.middleware.js";
 
-import {
-  validate
-} from "../middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 
 import {
   createAccountSchema,
   listAccountSchema,
   accountIdSchema,
   updateAccountSchema,
-  updateAccountStatusSchema
+  updateAccountStatusSchema,
 } from "../validators/account.validator.js";
 
-const router =
-  express.Router();
+const router = express.Router();
 
 /*
  * Create account
@@ -39,14 +32,9 @@ const router =
 router.post(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    createAccountSchema
-  ),
-  create
+  authorize("owner", "admin"),
+  validate(createAccountSchema),
+  create,
 );
 
 /*
@@ -58,15 +46,9 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    listAccountSchema
-  ),
-  list
+  authorize("owner", "admin", "employee"),
+  validate(listAccountSchema),
+  list,
 );
 
 /*
@@ -75,15 +57,9 @@ router.get(
 router.get(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin",
-    "employee"
-  ),
-  validate(
-    accountIdSchema
-  ),
-  getOne
+  authorize("owner", "admin", "employee"),
+  validate(accountIdSchema),
+  getOne,
 );
 
 /*
@@ -92,14 +68,9 @@ router.get(
 router.patch(
   "/:id",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    updateAccountSchema
-  ),
-  update
+  authorize("owner", "admin"),
+  validate(updateAccountSchema),
+  update,
 );
 
 /*
@@ -108,14 +79,9 @@ router.patch(
 router.patch(
   "/:id/status",
   authenticate,
-  authorize(
-    "owner",
-    "admin"
-  ),
-  validate(
-    updateAccountStatusSchema
-  ),
-  updateStatus
+  authorize("owner", "admin"),
+  validate(updateAccountStatusSchema),
+  updateStatus,
 );
 
 export default router;
