@@ -6,6 +6,12 @@ const decimalSchema = z
   .string()
   .trim()
   .regex(/^\d+(\.\d{1,4})?$/, "Invalid decimal amount");
+const invoiceItemsSchema = z.array(z.object({
+  description: z.string().trim().min(1).max(500),
+  quantity: decimalSchema,
+  unitPrice: decimalSchema,
+  categoryId: objectIdSchema.optional(),
+})).min(1).max(50).optional();
 
 export const initDocumentUploadSchema = z.object({
   body: z.object({
@@ -91,6 +97,7 @@ export const convertDocumentSchema = z.object({
       categoryId: objectIdSchema.optional(),
       amount: decimalSchema.optional(),
       description: z.string().trim().max(500).optional(),
+      items: invoiceItemsSchema,
     }),
     z.object({
       targetType: z.literal("bill"),
@@ -100,6 +107,7 @@ export const convertDocumentSchema = z.object({
       categoryId: objectIdSchema.optional(),
       amount: decimalSchema.optional(),
       description: z.string().trim().max(500).optional(),
+      items: invoiceItemsSchema,
     }),
     z.object({
       targetType: z.literal("transaction"),

@@ -42,6 +42,9 @@ const baseFields = {
     .trim()
     .max(100, "Reference cannot exceed 100 characters")
     .optional(),
+
+  // Optional audit marker. Normal manual transactions keep the default.
+  source: z.enum(["manual", "ai"]).optional(),
 };
 
 export const createTransactionSchema = z.object({

@@ -41,7 +41,7 @@ const smtpSend = ({ to, subject, text, html, attachments = [] }) =>
       } else {
         m += `Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${html || `<pre>${text || ""}</pre>`}\r\n`;
       }
-      return m.replace(/\n/g, "\r\n");
+      return m.replace(/\r?\n/g, "\r\n");
     };
     const onConnect = () => {};
     const connect = () => {

@@ -22,6 +22,7 @@ import recurringTransactionRoutes from "./routes/recurringTransaction.routes.js"
 import reportRoutes from "./routes/report.routes.js";
 import documentRoutes from "./routes/document.routes.js";
 import mvpRoutes from "./routes/mvp.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 import { auditRequest } from "./middleware/audit.middleware.js";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
@@ -102,6 +103,7 @@ app.use("/api/v1", ledgerRoutes);
 app.use("/api/v1/recurring-transactions", recurringTransactionRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/documents", documentRoutes);
+app.use("/api/v1/ai", aiRoutes);
 app.use("/api/v1", mvpRoutes);
 
 /*

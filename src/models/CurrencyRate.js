@@ -27,4 +27,3 @@ schema.index({
   effectiveAt: -1,
 });
 export default mongoose.model("CurrencyRate", schema);
-F

@@ -10,6 +10,17 @@ const envSchema = z.object({
 
   MONGO_URI: z.string().min(1, "MONGO_URI is required"),
 
+  // Groq is optional so the existing non-AI API can run without a key.
+  GROQ_API_KEY: z.string().default(""),
+  GROQ_MODEL: z.string().trim().min(1).default("openai/gpt-oss-20b"),
+  GROQ_BASE_URL: z.string().url().default("https://api.groq.com/openai/v1"),
+  GROQ_TIMEOUT_MS: z.coerce.number().int().min(5000).max(120000).default(45000),
+  GROQ_DOCUMENT_EXTRACTION_ENABLED: z.preprocess((value) => {
+    if (value === undefined) return true;
+    if (typeof value === "boolean") return value;
+    return String(value).toLowerCase() === "true";
+  }, z.boolean()),
+
   CLIENT_URL: z.string().min(1, "CLIENT_URL is required"),
 
   JWT_ACCESS_SECRET: z

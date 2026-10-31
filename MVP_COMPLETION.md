@@ -57,3 +57,8 @@ The repository intentionally contains `.env.example` only. Never commit real cre
 ## Verification
 
 Static JavaScript syntax checks and Python OCR syntax checks pass in the release workspace. Full database integration tests still require a configured MongoDB instance and installed npm dependencies.
+
+
+## Groq LLM capabilities
+
+The backend now includes optional Groq-powered finance Q&A, transaction drafting, transaction categorization, financial report narratives, heuristic anomaly review, inventory advice, payment-reminder drafts, and document OCR normalization. Configure `GROQ_API_KEY` to enable the AI endpoints. Full endpoint contracts and privacy controls are documented in `AI_INTEGRATION.md`. AI output is never treated as an authoritative accounting write: user confirmation and existing financial services remain required.

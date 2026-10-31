@@ -19,6 +19,7 @@ export const createTransaction = async ({
   description,
   reference,
   sourceDocumentId,
+  source = "manual",
 }) => {
   const session = await mongoose.startSession();
 
@@ -175,7 +176,7 @@ export const createTransaction = async ({
 
               reference: reference || null,
 
-              source: "manual",
+              source: source === "ai" ? "ai" : "manual",
 
               status: "posted",
 
@@ -307,7 +308,7 @@ export const createTransaction = async ({
 
               reference: reference || null,
 
-              source: "manual",
+              source: source === "ai" ? "ai" : "manual",
 
               status: "posted",
 

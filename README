@@ -432,6 +432,13 @@ Potential future modules include:
 
 ---
 
+
+## Groq AI integration
+
+The optional Groq integration provides a finance assistant, natural-language transaction drafts, category suggestions, report narratives, transaction anomaly review, inventory reorder advice, payment reminder drafts, and AI-assisted OCR field extraction. All AI routes are authenticated and tenant-scoped. AI-generated financial actions remain drafts/suggestions; the backend's existing validated services remain the only way to post financial records or update balances.
+
+See [AI_INTEGRATION.md](./AI_INTEGRATION.md) for environment setup, data-privacy controls, endpoint contracts, examples, and troubleshooting. Configure `GROQ_API_KEY` in the backend `.env`; never expose it to the frontend.
+
 ## License
 
 This project is currently a private development project.
