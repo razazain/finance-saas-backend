@@ -22,6 +22,7 @@ const envSchema = z.object({
   }, z.boolean()),
 
   CLIENT_URL: z.string().min(1, "CLIENT_URL is required"),
+  BACKEND_URL: z.string().min(1, "BACKEND_URL is required"),
 
   JWT_ACCESS_SECRET: z
     .string()

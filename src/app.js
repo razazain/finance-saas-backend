@@ -38,9 +38,7 @@ app.use(
     credentials: true,
   }),
 );
-/*
- * General rate limiting
- */
+
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 200,
@@ -56,13 +54,6 @@ const generalLimiter = rateLimit({
 
 app.use(generalLimiter);
 
-/*
- * Body size limits
- *
- * We intentionally keep these small.
- * File uploads will use a dedicated
- * upload mechanism later.
- */
 app.use(
   express.json({
     limit: "100kb",
@@ -84,9 +75,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-/*
- * API routes
- */
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/businesses", businessRoutes);
 app.use("/api/v1/users", userRoutes);
@@ -106,9 +95,7 @@ app.use("/api/v1/documents", documentRoutes);
 app.use("/api/v1/ai", aiRoutes);
 app.use("/api/v1", mvpRoutes);
 
-/*
- * 404 handler
- */
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -117,12 +104,6 @@ app.use((req, res) => {
   });
 });
 
-/*
- * Global error handler
- *
- * This must be registered after
- * all routes.
- */
 app.use(errorMiddleware);
 
 export default app;
