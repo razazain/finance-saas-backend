@@ -141,16 +141,28 @@ export const getDocument = async ({ businessId, documentId }) => {
 
 export const extractDocumentWithAi = async ({ businessId, documentId }) => {
   if (!env.GROQ_DOCUMENT_EXTRACTION_ENABLED) {
-    throw new AppError("AI document extraction is disabled by configuration", 503, "AI_DOCUMENT_EXTRACTION_DISABLED");
+    throw new AppError(
+      "AI document extraction is disabled by configuration",
+      503,
+      "AI_DOCUMENT_EXTRACTION_DISABLED",
+    );
   }
   if (!isGroqEnabled()) {
     throw new AppError("Groq AI is not configured", 503, "AI_NOT_CONFIGURED");
   }
 
   const document = await Document.findOne({ _id: documentId, businessId });
-  if (!document) throw new AppError("Document not found", 404, "DOCUMENT_NOT_FOUND");
-  if (document.processingStatus !== "processed" || !document.extractedData?.rawText) {
-    throw new AppError("Document must complete OCR processing before AI extraction", 409, "DOCUMENT_OCR_REQUIRED");
+  if (!document)
+    throw new AppError("Document not found", 404, "DOCUMENT_NOT_FOUND");
+  if (
+    document.processingStatus !== "processed" ||
+    !document.extractedData?.rawText
+  ) {
+    throw new AppError(
+      "Document must complete OCR processing before AI extraction",
+      409,
+      "DOCUMENT_OCR_REQUIRED",
+    );
   }
 
   const ai = await extractDocumentFieldsWithAi({
@@ -199,7 +211,11 @@ export const processDocument = async ({ businessId, documentId }) => {
 
     // OCR remains the fallback/source text. Groq adds a separate, reviewable
     // normalized extraction and never creates a financial record by itself.
-    if (env.GROQ_DOCUMENT_EXTRACTION_ENABLED && isGroqEnabled() && result.rawText) {
+    if (
+      env.GROQ_DOCUMENT_EXTRACTION_ENABLED &&
+      isGroqEnabled() &&
+      result.rawText
+    ) {
       try {
         result.ai = await extractDocumentFieldsWithAi({
           rawText: result.rawText,
@@ -207,10 +223,18 @@ export const processDocument = async ({ businessId, documentId }) => {
           expectedDocumentType: document.documentType,
         });
         const aiType = result.ai.classification;
-        if (document.documentType === "other" && ["invoice", "bill", "receipt", "statement"].includes(aiType)) {
+        if (
+          document.documentType === "other" &&
+          ["invoice", "bill", "receipt", "statement"].includes(aiType)
+        ) {
           document.documentType = aiType;
         }
-        if (aiType === "invoice" || aiType === "bill" || aiType === "receipt" || aiType === "statement") {
+        if (
+          aiType === "invoice" ||
+          aiType === "bill" ||
+          aiType === "receipt" ||
+          aiType === "statement"
+        ) {
           document.classification = aiType;
           document.classificationConfidence = result.ai.confidence;
         } else if (aiType === "expense") {
@@ -232,7 +256,9 @@ export const processDocument = async ({ businessId, documentId }) => {
     } else {
       result.ai = {
         provider: "groq",
-        status: isGroqEnabled() ? "disabled_by_configuration" : "not_configured",
+        status: isGroqEnabled()
+          ? "disabled_by_configuration"
+          : "not_configured",
         reviewRequired: true,
       };
     }
@@ -262,8 +288,15 @@ const extractedDate = (document) =>
   null;
 const extractedDescription = (document) => {
   const aiItems = document.extractedData?.ai?.lineItems || [];
-  if (aiItems.length) return aiItems.slice(0, 3).map((item) => item.description).join("; ");
-  return document.extractedData?.extracted?.lines?.slice(0, 3).join(" ") || document.originalFileName;
+  if (aiItems.length)
+    return aiItems
+      .slice(0, 3)
+      .map((item) => item.description)
+      .join("; ");
+  return (
+    document.extractedData?.extracted?.lines?.slice(0, 3).join(" ") ||
+    document.originalFileName
+  );
 };
 
 export const convertDocument = async ({
@@ -301,7 +334,8 @@ export const convertDocument = async ({
       : payload.targetType === "bill"
         ? Bill
         : Transaction;
-  const existingRecord = await Existing.findOne(existingSourceFilter).select("_id");
+  const existingRecord =
+    await Existing.findOne(existingSourceFilter).select("_id");
   if (existingRecord) {
     document.conversion = {
       status: "converted",
@@ -318,9 +352,16 @@ export const convertDocument = async ({
   const amount = payload.amount || extractedAmount(document);
   const aiFields = document.extractedData?.ai?.fields || {};
   const detectedCurrency = String(
-    aiFields.currency || document.extractedData?.extracted?.fields?.currency || "",
-  ).trim().toUpperCase();
-  if (/^[A-Z]{3}$/.test(detectedCurrency) && detectedCurrency !== business.currency) {
+    aiFields.currency ||
+      document.extractedData?.extracted?.fields?.currency ||
+      "",
+  )
+    .trim()
+    .toUpperCase();
+  if (
+    /^[A-Z]{3}$/.test(detectedCurrency) &&
+    detectedCurrency !== business.currency
+  ) {
     throw new AppError(
       `Document currency ${detectedCurrency} does not match business currency ${business.currency}. Convert or correct the currency before creating a financial record.`,
       409,
@@ -345,7 +386,13 @@ export const convertDocument = async ({
 
   // Validate before switching the conversion state to processing. This keeps
   // a missing-amount document retryable instead of leaving it stuck.
-  if (!amount && !(payload.targetType !== "transaction" && (payload.items?.length || extractedItems.length))) {
+  if (
+    !amount &&
+    !(
+      payload.targetType !== "transaction" &&
+      (payload.items?.length || extractedItems.length)
+    )
+  ) {
     throw new AppError(
       "Amount could not be extracted. Provide amount manually.",
       400,
@@ -371,7 +418,14 @@ export const convertDocument = async ({
         ? payload.items
         : extractedItems.length
           ? extractedItems
-          : [{ description, quantity: "1", unitPrice: amount, categoryId: payload.categoryId }];
+          : [
+              {
+                description,
+                quantity: "1",
+                unitPrice: amount,
+                categoryId: payload.categoryId,
+              },
+            ];
 
       if (payload.targetType === "invoice") {
         result = await createInvoice({

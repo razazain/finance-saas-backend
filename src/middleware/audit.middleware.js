@@ -1,7 +1,11 @@
 import AuditLog from "../models/AuditLog.js";
 import { env } from "../config/env.js";
+
+
 export const auditRequest = (req, res, next) => {
+
   if (!env.AUDIT_LOG_ENABLED) return next();
+  
   res.on("finish", () => {
     if (!req.user || req.method === "GET" || req.method === "HEAD") return;
     AuditLog.create({

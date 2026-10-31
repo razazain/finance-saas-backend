@@ -24,11 +24,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Create bill.
- *
- * Employees can create bills.
- */
 router.post(
   "/",
   authenticate,
@@ -37,9 +32,6 @@ router.post(
   create,
 );
 
-/*
- * List bills.
- */
 router.get(
   "/",
   authenticate,
@@ -48,9 +40,6 @@ router.get(
   list,
 );
 
-/*
- * Get single bill.
- */
 router.get(
   "/:id",
   authenticate,
@@ -59,9 +48,6 @@ router.get(
   getOne,
 );
 
-/*
- * Update draft bill.
- */
 router.patch(
   "/:id",
   authenticate,
@@ -70,12 +56,6 @@ router.patch(
   update,
 );
 
-/*
- * Mark received / cancel.
- *
- * Same permission model as invoices:
- * employees cannot change lifecycle status.
- */
 router.patch(
   "/:id/status",
   authenticate,

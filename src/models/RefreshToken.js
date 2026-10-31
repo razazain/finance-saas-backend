@@ -47,10 +47,6 @@ const refreshTokenSchema = new mongoose.Schema(
   },
 );
 
-/*
- * MongoDB automatically removes expired
- * refresh-token records.
- */
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const RefreshToken = mongoose.model("RefreshToken", refreshTokenSchema);

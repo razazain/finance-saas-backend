@@ -21,9 +21,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Record payment for a bill.
- */
 router.post(
   "/bills/:id/payments",
   authenticate,
@@ -33,9 +30,6 @@ router.post(
   create,
 );
 
-/*
- * Get all payments for a bill.
- */
 router.get(
   "/bills/:id/payments",
   authenticate,
@@ -44,9 +38,6 @@ router.get(
   list,
 );
 
-/*
- * Get one payment.
- */
 router.get(
   "/bill-payments/:id",
   authenticate,

@@ -25,7 +25,11 @@ export const assistant = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     ...req.validated.body,
   });
-  return successResponse({ res, message: "Finance assistant response generated", data: result });
+  return successResponse({
+    res,
+    message: "Finance assistant response generated",
+    data: result,
+  });
 });
 
 export const transactionDraft = asyncHandler(async (req, res) => {
@@ -33,7 +37,11 @@ export const transactionDraft = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     ...req.validated.body,
   });
-  return successResponse({ res, message: "Transaction draft generated for review", data: result });
+  return successResponse({
+    res,
+    message: "Transaction draft generated for review",
+    data: result,
+  });
 });
 
 export const categorize = asyncHandler(async (req, res) => {
@@ -41,7 +49,11 @@ export const categorize = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     ...req.validated.body,
   });
-  return successResponse({ res, message: "Transaction category suggested", data: result });
+  return successResponse({
+    res,
+    message: "Transaction category suggested",
+    data: result,
+  });
 });
 
 export const reportSummary = asyncHandler(async (req, res) => {
@@ -49,7 +61,11 @@ export const reportSummary = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     ...req.validated.body,
   });
-  return successResponse({ res, message: "Financial report summary generated", data: result });
+  return successResponse({
+    res,
+    message: "Financial report summary generated",
+    data: result,
+  });
 });
 
 export const paymentReminder = asyncHandler(async (req, res) => {
@@ -57,12 +73,22 @@ export const paymentReminder = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     ...req.validated.body,
   });
-  return successResponse({ res, message: "Payment reminder draft generated", data: result });
+  return successResponse({
+    res,
+    message: "Payment reminder draft generated",
+    data: result,
+  });
 });
 
 export const inventoryAdvice = asyncHandler(async (req, res) => {
-  const result = await generateInventoryAdvice({ businessId: req.user.businessId });
-  return successResponse({ res, message: "Inventory advice generated", data: result });
+  const result = await generateInventoryAdvice({
+    businessId: req.user.businessId,
+  });
+  return successResponse({
+    res,
+    message: "Inventory advice generated",
+    data: result,
+  });
 });
 
 export const anomalyReview = asyncHandler(async (req, res) => {
@@ -70,7 +96,11 @@ export const anomalyReview = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     ...req.validated.body,
   });
-  return successResponse({ res, message: "Transaction review completed", data: result });
+  return successResponse({
+    res,
+    message: "Transaction review completed",
+    data: result,
+  });
 });
 
 export const documentExtraction = asyncHandler(async (req, res) => {
@@ -78,5 +108,9 @@ export const documentExtraction = asyncHandler(async (req, res) => {
     businessId: req.user.businessId,
     documentId: req.validated.params.id,
   });
-  return successResponse({ res, message: "AI document extraction completed", data: result });
+  return successResponse({
+    res,
+    message: "AI document extraction completed",
+    data: result,
+  });
 });

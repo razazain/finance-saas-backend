@@ -64,14 +64,21 @@ const calculateNextRun = ({ currentDate, frequency, intervalDays }) => {
       const day = next.getDate();
       next.setDate(1);
       next.setMonth(next.getMonth() + 1);
-      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      const lastDay = new Date(
+        next.getFullYear(),
+        next.getMonth() + 1,
+        0,
+      ).getDate();
       next.setDate(Math.min(day, lastDay));
       break;
     }
 
     case "yearly": {
-      const month = next.getMonth(); const day = next.getDate();
-      next.setDate(1); next.setFullYear(next.getFullYear() + 1); next.setMonth(month);
+      const month = next.getMonth();
+      const day = next.getDate();
+      next.setDate(1);
+      next.setFullYear(next.getFullYear() + 1);
+      next.setMonth(month);
       const lastDay = new Date(next.getFullYear(), month + 1, 0).getDate();
       next.setDate(Math.min(day, lastDay));
       break;
@@ -385,7 +392,9 @@ export const createRecurringTransaction = async ({
 
         amount: toDecimal128(decimalAmount),
 
-        currency: (await Account.findById(accountId).select("currency").session(session)).currency,
+        currency: (
+          await Account.findById(accountId).select("currency").session(session)
+        ).currency,
 
         accountId,
 
@@ -862,7 +871,11 @@ export const executeRecurringTransaction = async ({
       recurringIdForResponse = recurring._id;
     });
 
-    return { transaction: generatedTransaction || null, recurringTransactionId: recurringIdForResponse, expired: !generatedTransaction };
+    return {
+      transaction: generatedTransaction || null,
+      recurringTransactionId: recurringIdForResponse,
+      expired: !generatedTransaction,
+    };
   } finally {
     await session.endSession();
   }

@@ -5,64 +5,41 @@ import Account from "../models/Account.js";
 import Business from "../models/Bussiness.js";
 import Category from "../models/Category.js";
 
-import {
-  AppError
-} from "../utils/appError.js";
+import { AppError } from "../utils/appError.js";
 
-const decimalToString =
-  (value) => {
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return "0";
+const decimalToString = (value) => {
+  if (value === null || value === undefined) {
+    return "0";
+  }
+
+  return value.toString();
+};
+
+const getBusinessObjectId = (businessId) => {
+  if (!mongoose.Types.ObjectId.isValid(businessId)) {
+    throw new AppError("Invalid business ID", 400, "INVALID_BUSINESS_ID");
+  }
+
+  return new mongoose.Types.ObjectId(businessId);
+};
+
+const buildDateFilter = ({ from, to }) => {
+  const filter = {};
+
+  if (from || to) {
+    filter.transactionDate = {};
+
+    if (from) {
+      filter.transactionDate.$gte = new Date(from);
     }
 
-    return value.toString();
-  };
-
-const getBusinessObjectId =
-  (businessId) => {
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        businessId
-      )
-    ) {
-      throw new AppError(
-        "Invalid business ID",
-        400,
-        "INVALID_BUSINESS_ID"
-      );
+    if (to) {
+      filter.transactionDate.$lte = new Date(to);
     }
+  }
 
-    return new mongoose.Types.ObjectId(
-      businessId
-    );
-  };
-
-const buildDateFilter =
-  ({
-    from,
-    to
-  }) => {
-    const filter = {};
-
-    if (from || to) {
-      filter.transactionDate = {};
-
-      if (from) {
-        filter.transactionDate.$gte =
-          new Date(from);
-      }
-
-      if (to) {
-        filter.transactionDate.$lte =
-          new Date(to);
-      }
-    }
-
-    return filter;
-  };
+  return filter;
+};
 
 /*
  * ============================================================
@@ -70,173 +47,116 @@ const buildDateFilter =
  * ============================================================
  */
 
-export const getIncomeExpenseReport =
-  async ({
-    businessId,
+export const getIncomeExpenseReport = async ({ businessId, from, to }) => {
+  const businessObjectId = getBusinessObjectId(businessId);
+
+  const business = await Business.findById(businessObjectId)
+    .select("timezone")
+    .lean();
+  const businessTimezone = business?.timezone || "Asia/Karachi";
+
+  const dateFilter = buildDateFilter({
     from,
-    to
-  }) => {
-    const businessObjectId =
-      getBusinessObjectId(
-        businessId
-      );
+    to,
+  });
 
-    const business = await Business.findById(businessObjectId).select("timezone").lean();
-    const businessTimezone = business?.timezone || "Asia/Karachi";
+  const [result] = await Transaction.aggregate([
+    {
+      $match: {
+        businessId: businessObjectId,
 
-    const dateFilter =
-      buildDateFilter({
-        from,
-        to
-      });
+        status: "posted",
 
-    const [
-      result
-    ] =
-      await Transaction.aggregate([
-        {
-          $match: {
-            businessId:
-              businessObjectId,
-
-            status:
-              "posted",
-
-            type: {
-              $in: [
-                "income",
-                "expense"
-              ]
-            },
-
-            ...dateFilter
-          }
+        type: {
+          $in: ["income", "expense"],
         },
 
-        {
-          $group: {
-            _id: "$type",
+        ...dateFilter,
+      },
+    },
 
-            total: {
-              $sum: "$amount"
-            },
+    {
+      $group: {
+        _id: "$type",
 
-            transactionCount: {
-              $sum: 1
-            }
-          }
-        }
-      ]);
-
-    const aggregation =
-      await Transaction.aggregate([
-        {
-          $match: {
-            businessId:
-              businessObjectId,
-
-            status:
-              "posted",
-
-            type: {
-              $in: [
-                "income",
-                "expense"
-              ]
-            },
-
-            ...dateFilter
-          }
+        total: {
+          $sum: "$amount",
         },
 
-        {
-          $group: {
-            _id: "$type",
+        transactionCount: {
+          $sum: 1,
+        },
+      },
+    },
+  ]);
 
-            total: {
-              $sum: "$amount"
-            },
+  const aggregation = await Transaction.aggregate([
+    {
+      $match: {
+        businessId: businessObjectId,
 
-            transactionCount: {
-              $sum: 1
-            }
-          }
-        }
-      ]);
+        status: "posted",
 
-    let income =
-      new mongoose.Types.Decimal128(
-        "0"
-      );
+        type: {
+          $in: ["income", "expense"],
+        },
 
-    let expense =
-      new mongoose.Types.Decimal128(
-        "0"
-      );
+        ...dateFilter,
+      },
+    },
 
-    let incomeCount = 0;
-    let expenseCount = 0;
+    {
+      $group: {
+        _id: "$type",
 
-    for (
-      const item of aggregation
-    ) {
-      if (
-        item._id === "income"
-      ) {
-        income =
-          item.total;
+        total: {
+          $sum: "$amount",
+        },
 
-        incomeCount =
-          item.transactionCount;
-      }
+        transactionCount: {
+          $sum: 1,
+        },
+      },
+    },
+  ]);
 
-      if (
-        item._id === "expense"
-      ) {
-        expense =
-          item.total;
+  let income = new mongoose.Types.Decimal128("0");
 
-        expenseCount =
-          item.transactionCount;
-      }
+  let expense = new mongoose.Types.Decimal128("0");
+
+  let incomeCount = 0;
+  let expenseCount = 0;
+
+  for (const item of aggregation) {
+    if (item._id === "income") {
+      income = item.total;
+
+      incomeCount = item.transactionCount;
     }
 
-    const net =
-      mongoose.Types.Decimal128
-        .fromString(
-          (
-            Number(
-              income.toString()
-            ) -
-            Number(
-              expense.toString()
-            )
-          ).toFixed(4)
-        );
+    if (item._id === "expense") {
+      expense = item.total;
 
-    return {
-      income:
-        decimalToString(
-          income
-        ),
+      expenseCount = item.transactionCount;
+    }
+  }
 
-      expense:
-        decimalToString(
-          expense
-        ),
+  const net = mongoose.Types.Decimal128.fromString(
+    (Number(income.toString()) - Number(expense.toString())).toFixed(4),
+  );
 
-      netIncome:
-        decimalToString(
-          net
-        ),
+  return {
+    income: decimalToString(income),
 
-      incomeTransactionCount:
-        incomeCount,
+    expense: decimalToString(expense),
 
-      expenseTransactionCount:
-        expenseCount
-    };
+    netIncome: decimalToString(net),
+
+    incomeTransactionCount: incomeCount,
+
+    expenseTransactionCount: expenseCount,
   };
+};
 
 /*
  * ============================================================
@@ -244,150 +164,112 @@ export const getIncomeExpenseReport =
  * ============================================================
  */
 
-export const getCashFlowReport =
-  async ({
-    businessId,
+export const getCashFlowReport = async ({ businessId, from, to }) => {
+  const businessObjectId = getBusinessObjectId(businessId);
+
+  const business = await Business.findById(businessObjectId)
+    .select("timezone")
+    .lean();
+  const businessTimezone = business?.timezone || "Asia/Karachi";
+
+  const dateFilter = buildDateFilter({
     from,
-    to
-  }) => {
-    const businessObjectId =
-      getBusinessObjectId(
-        businessId
-      );
+    to,
+  });
 
-    const business = await Business.findById(businessObjectId).select("timezone").lean();
-    const businessTimezone = business?.timezone || "Asia/Karachi";
+  const result = await Transaction.aggregate([
+    {
+      $match: {
+        businessId: businessObjectId,
 
-    const dateFilter =
-      buildDateFilter({
-        from,
-        to
-      });
+        status: "posted",
 
-    const result =
-      await Transaction.aggregate([
-        {
-          $match: {
-            businessId:
-              businessObjectId,
-
-            status:
-              "posted",
-
-            type: {
-              $in: [
-                "income",
-                "expense"
-              ]
-            },
-
-            ...dateFilter
-          }
+        type: {
+          $in: ["income", "expense"],
         },
 
-        {
-          $group: {
-            _id: {
-              $dateToString: {
-                format:
-                  "%Y-%m-%d",
+        ...dateFilter,
+      },
+    },
 
-                date: "$transactionDate",
-                timezone: businessTimezone
-              }
-            },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y-%m-%d",
 
-            income: {
-              $sum: {
-                $cond: [
-                  {
-                    $eq: [
-                      "$type",
-                      "income"
-                    ]
-                  },
-
-                  "$amount",
-
-                  {
-                    $toDecimal:
-                      "0"
-                  }
-                ]
-              }
-            },
-
-            expense: {
-              $sum: {
-                $cond: [
-                  {
-                    $eq: [
-                      "$type",
-                      "expense"
-                    ]
-                  },
-
-                  "$amount",
-
-                  {
-                    $toDecimal:
-                      "0"
-                  }
-                ]
-              }
-            }
-          }
+            date: "$transactionDate",
+            timezone: businessTimezone,
+          },
         },
 
-        {
-          $project: {
-            _id: 0,
+        income: {
+          $sum: {
+            $cond: [
+              {
+                $eq: ["$type", "income"],
+              },
 
-            date:
-              "$_id",
+              "$amount",
 
-            income: 1,
-
-            expense: 1,
-
-            netCashFlow: {
-              $subtract: [
-                "$income",
-                "$expense"
-              ]
-            }
-          }
+              {
+                $toDecimal: "0",
+              },
+            ],
+          },
         },
 
-        {
-          $sort: {
-            date: 1
-          }
-        }
-      ]);
+        expense: {
+          $sum: {
+            $cond: [
+              {
+                $eq: ["$type", "expense"],
+              },
 
-    return result.map(
-      (item) => ({
-        date:
-          item.date,
+              "$amount",
 
-        income:
-          decimalToString(
-            item.income
-          ),
+              {
+                $toDecimal: "0",
+              },
+            ],
+          },
+        },
+      },
+    },
 
-        expense:
-          decimalToString(
-            item.expense
-          ),
+    {
+      $project: {
+        _id: 0,
 
-        netCashFlow:
-          decimalToString(
-            item.netCashFlow
-          )
-      })
-    );
-  };
+        date: "$_id",
+
+        income: 1,
+
+        expense: 1,
+
+        netCashFlow: {
+          $subtract: ["$income", "$expense"],
+        },
+      },
+    },
+
+    {
+      $sort: {
+        date: 1,
+      },
+    },
+  ]);
+
+  return result.map((item) => ({
+    date: item.date,
+
+    income: decimalToString(item.income),
+
+    expense: decimalToString(item.expense),
+
+    netCashFlow: decimalToString(item.netCashFlow),
+  }));
+};
 
 /*
  * ============================================================
@@ -395,159 +277,123 @@ export const getCashFlowReport =
  * ============================================================
  */
 
-export const getCategoryBreakdownReport =
-  async ({
-    businessId,
+export const getCategoryBreakdownReport = async ({
+  businessId,
+  from,
+  to,
+  type,
+  categoryId,
+}) => {
+  const businessObjectId = getBusinessObjectId(businessId);
+
+  const business = await Business.findById(businessObjectId)
+    .select("timezone")
+    .lean();
+  const businessTimezone = business?.timezone || "Asia/Karachi";
+
+  const dateFilter = buildDateFilter({
     from,
     to,
-    type,
-    categoryId
-  }) => {
-    const businessObjectId =
-      getBusinessObjectId(
-        businessId
-      );
+  });
 
-    const business = await Business.findById(businessObjectId).select("timezone").lean();
-    const businessTimezone = business?.timezone || "Asia/Karachi";
+  const match = {
+    businessId: businessObjectId,
 
-    const dateFilter =
-      buildDateFilter({
-        from,
-        to
-      });
+    status: "posted",
 
-    const match = {
-      businessId:
-        businessObjectId,
+    type: {
+      $in: ["income", "expense"],
+    },
 
-      status:
-        "posted",
-
-      type: {
-        $in: [
-          "income",
-          "expense"
-        ]
-      },
-
-      ...dateFilter
-    };
-
-    if (type) {
-      match.type = type;
-    }
-
-    if (categoryId) {
-      match.categoryId =
-        new mongoose.Types.ObjectId(
-          categoryId
-        );
-    }
-
-    const result =
-      await Transaction.aggregate([
-        {
-          $match:
-            match
-        },
-
-        {
-          $group: {
-            _id: {
-              categoryId:
-                "$categoryId",
-
-              type:
-                "$type"
-            },
-
-            total: {
-              $sum:
-                "$amount"
-            },
-
-            transactionCount: {
-              $sum:
-                1
-            }
-          }
-        },
-
-        {
-          $lookup: {
-            from:
-              "categories",
-
-            localField:
-              "_id.categoryId",
-
-            foreignField:
-              "_id",
-
-            as:
-              "category"
-          }
-        },
-
-        {
-          $unwind: {
-            path:
-              "$category",
-
-            preserveNullAndEmptyArrays:
-              true
-          }
-        },
-
-        {
-          $project: {
-            _id: 0,
-
-            categoryId:
-              "$_id.categoryId",
-
-            categoryName:
-              "$category.name",
-
-            type:
-              "$_id.type",
-
-            total: 1,
-
-            transactionCount: 1
-          }
-        },
-
-        {
-          $sort: {
-            total: -1
-          }
-        }
-      ]);
-
-    return result.map(
-      (item) => ({
-        categoryId:
-          item.categoryId,
-
-        categoryName:
-          item.categoryName ||
-          "Uncategorized",
-
-        type:
-          item.type,
-
-        total:
-          decimalToString(
-            item.total
-          ),
-
-        transactionCount:
-          item.transactionCount
-      })
-    );
+    ...dateFilter,
   };
+
+  if (type) {
+    match.type = type;
+  }
+
+  if (categoryId) {
+    match.categoryId = new mongoose.Types.ObjectId(categoryId);
+  }
+
+  const result = await Transaction.aggregate([
+    {
+      $match: match,
+    },
+
+    {
+      $group: {
+        _id: {
+          categoryId: "$categoryId",
+
+          type: "$type",
+        },
+
+        total: {
+          $sum: "$amount",
+        },
+
+        transactionCount: {
+          $sum: 1,
+        },
+      },
+    },
+
+    {
+      $lookup: {
+        from: "categories",
+
+        localField: "_id.categoryId",
+
+        foreignField: "_id",
+
+        as: "category",
+      },
+    },
+
+    {
+      $unwind: {
+        path: "$category",
+
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    {
+      $project: {
+        _id: 0,
+
+        categoryId: "$_id.categoryId",
+
+        categoryName: "$category.name",
+
+        type: "$_id.type",
+
+        total: 1,
+
+        transactionCount: 1,
+      },
+    },
+
+    {
+      $sort: {
+        total: -1,
+      },
+    },
+  ]);
+
+  return result.map((item) => ({
+    categoryId: item.categoryId,
+
+    categoryName: item.categoryName || "Uncategorized",
+
+    type: item.type,
+
+    total: decimalToString(item.total),
+
+    transactionCount: item.transactionCount,
+  }));
+};
 
 /*
  * ============================================================
@@ -555,160 +401,124 @@ export const getCategoryBreakdownReport =
  * ============================================================
  */
 
-export const getMonthlySummaryReport =
-  async ({
-    businessId,
+export const getMonthlySummaryReport = async ({ businessId, from, to }) => {
+  const businessObjectId = getBusinessObjectId(businessId);
+
+  const business = await Business.findById(businessObjectId)
+    .select("timezone")
+    .lean();
+  const businessTimezone = business?.timezone || "Asia/Karachi";
+
+  const dateFilter = buildDateFilter({
     from,
-    to
-  }) => {
-    const businessObjectId =
-      getBusinessObjectId(
-        businessId
-      );
+    to,
+  });
 
-    const business = await Business.findById(businessObjectId).select("timezone").lean();
-    const businessTimezone = business?.timezone || "Asia/Karachi";
+  const result = await Transaction.aggregate([
+    {
+      $match: {
+        businessId: businessObjectId,
 
-    const dateFilter =
-      buildDateFilter({
-        from,
-        to
-      });
+        status: "posted",
 
-    const result =
-      await Transaction.aggregate([
-        {
-          $match: {
-            businessId:
-              businessObjectId,
-
-            status:
-              "posted",
-
-            type: {
-              $in: [
-                "income",
-                "expense"
-              ]
-            },
-
-            ...dateFilter
-          }
+        type: {
+          $in: ["income", "expense"],
         },
 
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: "%Y-%m", date: "$transactionDate", timezone: businessTimezone }
-            },
+        ...dateFilter,
+      },
+    },
 
-            income: {
-              $sum: {
-                $cond: [
-                  {
-                    $eq: [
-                      "$type",
-                      "income"
-                    ]
-                  },
-
-                  "$amount",
-
-                  {
-                    $toDecimal:
-                      "0"
-                  }
-                ]
-              }
-            },
-
-            expense: {
-              $sum: {
-                $cond: [
-                  {
-                    $eq: [
-                      "$type",
-                      "expense"
-                    ]
-                  },
-
-                  "$amount",
-
-                  {
-                    $toDecimal:
-                      "0"
-                  }
-                ]
-              }
-            },
-
-            transactionCount: {
-              $sum: 1
-            }
-          }
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y-%m",
+            date: "$transactionDate",
+            timezone: businessTimezone,
+          },
         },
 
-        {
-          $project: {
-            _id: 0,
+        income: {
+          $sum: {
+            $cond: [
+              {
+                $eq: ["$type", "income"],
+              },
 
-            year:
-              "$_id.year",
+              "$amount",
 
-            month:
-              "$_id.month",
-
-            income: 1,
-
-            expense: 1,
-
-            netCashFlow: {
-              $subtract: [
-                "$income",
-                "$expense"
-              ]
-            },
-
-            transactionCount: 1
-          }
+              {
+                $toDecimal: "0",
+              },
+            ],
+          },
         },
 
-        {
-          $sort: {
-            year: 1,
-            month: 1
-          }
-        }
-      ]);
+        expense: {
+          $sum: {
+            $cond: [
+              {
+                $eq: ["$type", "expense"],
+              },
 
-    return result.map(
-      (item) => ({
-        year:
-          item.year,
+              "$amount",
 
-        month:
-          item.month,
+              {
+                $toDecimal: "0",
+              },
+            ],
+          },
+        },
 
-        income:
-          decimalToString(
-            item.income
-          ),
+        transactionCount: {
+          $sum: 1,
+        },
+      },
+    },
 
-        expense:
-          decimalToString(
-            item.expense
-          ),
+    {
+      $project: {
+        _id: 0,
 
-        netCashFlow:
-          decimalToString(
-            item.netCashFlow
-          ),
+        year: "$_id.year",
 
-        transactionCount:
-          item.transactionCount
-      })
-    );
-  };
+        month: "$_id.month",
+
+        income: 1,
+
+        expense: 1,
+
+        netCashFlow: {
+          $subtract: ["$income", "$expense"],
+        },
+
+        transactionCount: 1,
+      },
+    },
+
+    {
+      $sort: {
+        year: 1,
+        month: 1,
+      },
+    },
+  ]);
+
+  return result.map((item) => ({
+    year: item.year,
+
+    month: item.month,
+
+    income: decimalToString(item.income),
+
+    expense: decimalToString(item.expense),
+
+    netCashFlow: decimalToString(item.netCashFlow),
+
+    transactionCount: item.transactionCount,
+  }));
+};
 
 /*
  * ============================================================
@@ -716,146 +526,128 @@ export const getMonthlySummaryReport =
  * ============================================================
  */
 
-export const getAccountSummaryReport =
-  async ({
-    businessId,
+export const getAccountSummaryReport = async ({
+  businessId,
+  from,
+  to,
+  accountId,
+}) => {
+  const businessObjectId = getBusinessObjectId(businessId);
+
+  const business = await Business.findById(businessObjectId)
+    .select("timezone")
+    .lean();
+  const businessTimezone = business?.timezone || "Asia/Karachi";
+
+  const dateFilter = buildDateFilter({
     from,
     to,
-    accountId
-  }) => {
-    const businessObjectId =
-      getBusinessObjectId(
-        businessId
-      );
+  });
 
-    const business = await Business.findById(businessObjectId).select("timezone").lean();
-    const businessTimezone = business?.timezone || "Asia/Karachi";
+  const match = {
+    businessId: businessObjectId,
 
-    const dateFilter =
-      buildDateFilter({
-        from,
-        to
-      });
+    status: "posted",
 
-    const match = {
-      businessId:
-        businessObjectId,
+    type: {
+      $in: ["income", "expense", "transfer"],
+    },
 
-      status:
-        "posted",
-
-      type: {
-        $in: [
-          "income",
-          "expense",
-          "transfer"
-        ]
-      },
-
-      ...dateFilter
-    };
-
-    if (accountId) {
-      const oid = new mongoose.Types.ObjectId(accountId);
-      match.$or = [{ accountId: oid }, { destinationAccountId: oid }];
-    }
-
-    const result =
-      await Transaction.aggregate([
-        {
-          $match:
-            match
-        },
-
-        {
-          $project: {
-            amount: 1,
-            accountId: { $cond: [ { $eq: ["$type", "transfer"] }, ["$accountId", "$destinationAccountId"], ["$accountId"] ] },
-            effectiveType: { $cond: [ { $eq: ["$type", "transfer"] }, ["expense", "income"], ["$type"] ] }
-          }
-        },
-        { $unwind: { path: "$accountId", includeArrayIndex: "side" } },
-        { $set: { effectiveType: { $arrayElemAt: ["$effectiveType", "$side"] } } },
-        {
-          $group: {
-            _id: { accountId: "$accountId", type: "$effectiveType" },
-            total: { $sum: "$amount" },
-            transactionCount: { $sum: 1 }
-          }
-        },
-
-        {
-          $lookup: {
-            from:
-              "accounts",
-
-            localField:
-              "_id.accountId",
-
-            foreignField:
-              "_id",
-
-            as:
-              "account"
-          }
-        },
-
-        {
-          $unwind:
-            "$account"
-        },
-
-        {
-          $project: {
-            _id: 0,
-
-            accountId:
-              "$_id.accountId",
-
-            accountName:
-              "$account.name",
-
-            accountType:
-              "$account.type",
-
-            transactionType:
-              "$_id.type",
-
-            total: 1,
-
-            transactionCount: 1
-          }
-        },
-
-        {
-          $sort: {
-            accountName: 1,
-            transactionType: 1
-          }
-        }
-      ]);
-
-    return result.map(
-      (item) => ({
-        accountId:
-          item.accountId,
-
-        accountName:
-          item.accountName,
-
-        accountType:
-          item.accountType,
-
-        transactionType:
-          item.transactionType,
-
-        total:
-          decimalToString(
-            item.total
-          ),
-
-        transactionCount:
-          item.transactionCount
-      })
-    );
+    ...dateFilter,
   };
+
+  if (accountId) {
+    const oid = new mongoose.Types.ObjectId(accountId);
+    match.$or = [{ accountId: oid }, { destinationAccountId: oid }];
+  }
+
+  const result = await Transaction.aggregate([
+    {
+      $match: match,
+    },
+
+    {
+      $project: {
+        amount: 1,
+        accountId: {
+          $cond: [
+            { $eq: ["$type", "transfer"] },
+            ["$accountId", "$destinationAccountId"],
+            ["$accountId"],
+          ],
+        },
+        effectiveType: {
+          $cond: [
+            { $eq: ["$type", "transfer"] },
+            ["expense", "income"],
+            ["$type"],
+          ],
+        },
+      },
+    },
+    { $unwind: { path: "$accountId", includeArrayIndex: "side" } },
+    { $set: { effectiveType: { $arrayElemAt: ["$effectiveType", "$side"] } } },
+    {
+      $group: {
+        _id: { accountId: "$accountId", type: "$effectiveType" },
+        total: { $sum: "$amount" },
+        transactionCount: { $sum: 1 },
+      },
+    },
+
+    {
+      $lookup: {
+        from: "accounts",
+
+        localField: "_id.accountId",
+
+        foreignField: "_id",
+
+        as: "account",
+      },
+    },
+
+    {
+      $unwind: "$account",
+    },
+
+    {
+      $project: {
+        _id: 0,
+
+        accountId: "$_id.accountId",
+
+        accountName: "$account.name",
+
+        accountType: "$account.type",
+
+        transactionType: "$_id.type",
+
+        total: 1,
+
+        transactionCount: 1,
+      },
+    },
+
+    {
+      $sort: {
+        accountName: 1,
+        transactionType: 1,
+      },
+    },
+  ]);
+
+  return result.map((item) => ({
+    accountId: item.accountId,
+
+    accountName: item.accountName,
+
+    accountType: item.accountType,
+
+    transactionType: item.transactionType,
+
+    total: decimalToString(item.total),
+
+    transactionCount: item.transactionCount,
+  }));
+};

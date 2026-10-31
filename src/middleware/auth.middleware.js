@@ -41,13 +41,6 @@ export const authenticate = async (req, res, next) => {
       throw new AppError("Invalid access token", 401, "INVALID_ACCESS_TOKEN");
     }
 
-    /*
-     * Fetch the current user from DB.
-     *
-     * This allows us to detect if the user
-     * has been deactivated after the JWT
-     * was issued.
-     */
     const user = await User.findById(decoded.userId).select(
       "_id businessId role isActive",
     );
@@ -72,13 +65,6 @@ export const authenticate = async (req, res, next) => {
       );
     }
 
-    /*
-     * Never trust businessId or role
-     * from the request body.
-     *
-     * These values come from the
-     * authenticated user.
-     */
     req.user = {
       userId: user._id.toString(),
       businessId: user.businessId.toString(),

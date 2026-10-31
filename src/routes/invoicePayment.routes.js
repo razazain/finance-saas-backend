@@ -21,11 +21,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Record invoice payment.
- *
- * Employees can record payments.
- */
 router.post(
   "/invoices/:id/payments",
   authenticate,
@@ -35,10 +30,6 @@ router.post(
   create,
 );
 
-/*
- * Get all payments for
- * an invoice.
- */
 router.get(
   "/invoices/:id/payments",
   authenticate,
@@ -47,9 +38,6 @@ router.get(
   list,
 );
 
-/*
- * Get single payment.
- */
 router.get(
   "/payments/:id",
   authenticate,

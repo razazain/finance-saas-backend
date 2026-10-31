@@ -6,7 +6,7 @@ const accountSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
       required: true,
-      index: true
+      index: true,
     },
 
     name: {
@@ -14,25 +14,20 @@ const accountSchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: 2,
-      maxlength: 100
+      maxlength: 100,
     },
 
     type: {
       type: String,
-      enum: [
-        "cash",
-        "bank",
-        "wallet",
-        "other"
-      ],
-      required: true
+      enum: ["cash", "bank", "wallet", "other"],
+      required: true,
     },
 
     description: {
       type: String,
       trim: true,
       maxlength: 500,
-      default: null
+      default: null,
     },
 
     currency: {
@@ -41,97 +36,62 @@ const accountSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
       minlength: 3,
-      maxlength: 3
+      maxlength: 3,
     },
 
-    /*
-     * Financial values use Decimal128
-     * instead of JavaScript floating point.
-     *
-     * This prevents errors such as:
-     *
-     * 0.1 + 0.2 !== 0.3
-     */
     openingBalance: {
       type: mongoose.Schema.Types.Decimal128,
-      default: 0
+      default: 0,
     },
 
-    /*
-     * This will be maintained by the
-     * transaction service later.
-     *
-     * It should NOT be directly editable
-     * through the account update API.
-     */
     currentBalance: {
       type: mongoose.Schema.Types.Decimal128,
-      default: 0
+      default: 0,
     },
 
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
     isSystem: {
       type: Boolean,
-      default: false
+      default: false,
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
 
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
-    }
+      required: true,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
-/*
- * An account name must be unique
- * within a business.
- *
- * Example:
- *
- * Business A
- *   Cash       ✅
- *   Bank       ✅
- *
- * Business B
- *   Cash       ✅
- */
 accountSchema.index(
   {
     businessId: 1,
-    name: 1
+    name: 1,
   },
   {
-    unique: true
-  }
+    unique: true,
+  },
 );
 
-/*
- * Useful for listing active accounts
- * by type.
- */
 accountSchema.index({
   businessId: 1,
   type: 1,
-  isActive: 1
+  isActive: 1,
 });
 
-const Account = mongoose.model(
-  "Account",
-  accountSchema
-);
+const Account = mongoose.model("Account", accountSchema);
 
 export default Account;

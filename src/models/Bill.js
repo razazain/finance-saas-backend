@@ -10,45 +10,21 @@ const billItemSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    /*
-     * Quantity can be fractional.
-     *
-     * Examples:
-     * 1
-     * 2.5
-     * 10
-     */
     quantity: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
 
-    /*
-     * Unit price is monetary,
-     * therefore Decimal128.
-     */
     unitPrice: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
 
-    /*
-     * Calculated by backend:
-     *
-     * quantity × unitPrice
-     */
     amount: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
 
-    /*
-     * Expense category.
-     *
-     * This will later be used when
-     * creating the expense transaction
-     * during bill payment.
-     */
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -69,9 +45,6 @@ const billSchema = new mongoose.Schema(
       index: true,
     },
 
-    /*
-     * Vendor who issued the bill.
-     */
     vendorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Party",
@@ -79,13 +52,6 @@ const billSchema = new mongoose.Schema(
       index: true,
     },
 
-    /*
-     * Human-readable bill number.
-     *
-     * Example:
-     *
-     * BILL-000001
-     */
     billNumber: {
       type: String,
       required: true,
@@ -102,11 +68,6 @@ const billSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * Currency comes from Business.
-     *
-     * Frontend does not control this.
-     */
     currency: {
       type: String,
       required: true,
@@ -161,9 +122,6 @@ const billSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * Will be updated by Bill Payments.
-     */
     paidAmount: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
@@ -175,11 +133,6 @@ const billSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * received = vendor bill has been received
-     * partially_paid / paid will be handled
-     * by Bill Payments later.
-     */
     status: {
       type: String,
       enum: ["draft", "received", "partially_paid", "paid", "cancelled"],
@@ -225,10 +178,6 @@ const billSchema = new mongoose.Schema(
   },
 );
 
-/*
- * Bill number must be unique
- * inside a business.
- */
 billSchema.index(
   {
     businessId: 1,
@@ -239,27 +188,18 @@ billSchema.index(
   },
 );
 
-/*
- * Vendor bill history.
- */
 billSchema.index({
   businessId: 1,
   vendorId: 1,
   billDate: -1,
 });
 
-/*
- * Bill listing.
- */
 billSchema.index({
   businessId: 1,
   status: 1,
   billDate: -1,
 });
 
-/*
- * Due-date queries.
- */
 billSchema.index({
   businessId: 1,
   dueDate: 1,

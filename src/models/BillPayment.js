@@ -70,10 +70,6 @@ const billPaymentSchema = new mongoose.Schema(
       default: null,
     },
 
-    /*
-     * Every bill payment creates
-     * exactly one expense transaction.
-     */
     transactionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transaction",

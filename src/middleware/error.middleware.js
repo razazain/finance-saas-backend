@@ -5,7 +5,6 @@ export const errorMiddleware = (error, req, res, next) => {
   if (env.NODE_ENV === "development") {
     console.error(error);
   } else {
-    // Minimize sensitive output in production logs
     console.error(
       `Error: ${error.message} (${error.code || error.statusCode || "ERR"})`,
     );

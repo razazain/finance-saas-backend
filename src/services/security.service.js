@@ -10,13 +10,143 @@ import { generateSecret, otpauthUrl, verifyTotp } from "../utils/totp.js";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/appError.js";
 
-const exp=mins=>new Date(Date.now()+mins*60000);
-export const issueEmailVerification=async(user)=>{const token=randomToken();await EmailVerificationToken.deleteMany({userId:user._id,usedAt:null});await EmailVerificationToken.create({userId:user._id,businessId:user.businessId,tokenHash:hashToken(token),expiresAt:exp(env.EMAIL_VERIFICATION_EXPIRES_MINUTES)});const url=`${env.CLIENT_URL}/verify-email?token=${token}`;return sendEmail({to:user.email,subject:"Verify your Finance SaaS email",text:`Verify your email: ${url}`,html:`<p>Verify your Finance SaaS email.</p><p><a href="${url}">Verify email</a></p>`});};
-export const verifyEmail=async(token)=>{const row=await EmailVerificationToken.findOne({tokenHash:hashToken(token),usedAt:null,expiresAt:{$gt:new Date()}});if(!row)throw new AppError("Verification token is invalid or expired",400,"INVALID_VERIFICATION_TOKEN");const user=await User.findOne({_id:row.userId,businessId:row.businessId});if(!user)throw new AppError("User not found",404,"USER_NOT_FOUND");user.emailVerifiedAt=new Date();await user.save();row.usedAt=new Date();await row.save();return {verified:true,email:user.email};};
-export const resendVerification=async(userId)=>{const user=await User.findById(userId);if(!user)throw new AppError("User not found",404,"USER_NOT_FOUND");if(user.emailVerifiedAt)return {verified:true};await issueEmailVerification(user);return {sent:true};};
-export const requestPasswordReset=async(email)=>{const user=await User.findOne({email});if(!user)return {sent:true};const token=randomToken();await PasswordResetToken.deleteMany({userId:user._id,usedAt:null});await PasswordResetToken.create({userId:user._id,tokenHash:hashToken(token),expiresAt:exp(env.PASSWORD_RESET_EXPIRES_MINUTES)});const url=`${env.CLIENT_URL}/reset-password?token=${token}`;await sendEmail({to:user.email,subject:"Reset your Finance SaaS password",text:`Reset your password: ${url}`,html:`<p><a href="${url}">Reset your password</a></p>`});return {sent:true};};
-export const resetPassword=async({token,password})=>{const row=await PasswordResetToken.findOne({tokenHash:hashToken(token),usedAt:null,expiresAt:{$gt:new Date()}});if(!row)throw new AppError("Reset token is invalid or expired",400,"INVALID_RESET_TOKEN");const user=await User.findById(row.userId).select("+password");if(!user)throw new AppError("User not found",404,"USER_NOT_FOUND");user.password=await bcrypt.hash(password,12);await user.save();row.usedAt=new Date();await row.save();return {reset:true};};
-export const setupMfa=async({userId,businessId})=>{const user=await User.findOne({_id:userId,businessId});if(!user)throw new AppError("User not found",404,"USER_NOT_FOUND");let row=await MfaSecret.findOne({userId});if(!row)row=await MfaSecret.create({userId,businessId,secret:generateSecret()});return {secret:row.secret,otpauthUrl:otpauthUrl({secret:row.secret,account:user.email,issuer:env.MFA_ISSUER}),enabled:user.mfaEnabled};};
-export const enableMfa=async({userId,code})=>{const user=await User.findById(userId);const row=await MfaSecret.findOne({userId});if(!user||!row)throw new AppError("MFA setup has not been started",400,"MFA_SETUP_REQUIRED");if(!verifyTotp(row.secret,code))throw new AppError("Invalid MFA code",400,"INVALID_MFA_CODE");user.mfaEnabled=true;await user.save();row.enabledAt=new Date();await row.save();return {enabled:true};};
-export const disableMfa=async({userId,code})=>{const user=await User.findById(userId);const row=await MfaSecret.findOne({userId});if(!user||!row||!verifyTotp(row.secret,code))throw new AppError("Invalid MFA code",400,"INVALID_MFA_CODE");user.mfaEnabled=false;await user.save();await MfaSecret.deleteOne({userId});return {enabled:false};};
-export const verifyMfa=async(userId,code)=>{const user=await User.findById(userId);if(!user?.mfaEnabled)return true;const row=await MfaSecret.findOne({userId});return !!row&&verifyTotp(row.secret,code);};
+const exp = (mins) => new Date(Date.now() + mins * 60000);
+export const issueEmailVerification = async (user) => {
+  const token = randomToken();
+  await EmailVerificationToken.deleteMany({ userId: user._id, usedAt: null });
+  await EmailVerificationToken.create({
+    userId: user._id,
+    businessId: user.businessId,
+    tokenHash: hashToken(token),
+    expiresAt: exp(env.EMAIL_VERIFICATION_EXPIRES_MINUTES),
+  });
+  const url = `${env.CLIENT_URL}/verify-email?token=${token}`;
+  return sendEmail({
+    to: user.email,
+    subject: "Verify your Finance SaaS email",
+    text: `Verify your email: ${url}`,
+    html: `<p>Verify your Finance SaaS email.</p><p><a href="${url}">Verify email</a></p>`,
+  });
+};
+export const verifyEmail = async (token) => {
+  const row = await EmailVerificationToken.findOne({
+    tokenHash: hashToken(token),
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+  if (!row)
+    throw new AppError(
+      "Verification token is invalid or expired",
+      400,
+      "INVALID_VERIFICATION_TOKEN",
+    );
+  const user = await User.findOne({
+    _id: row.userId,
+    businessId: row.businessId,
+  });
+  if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  user.emailVerifiedAt = new Date();
+  await user.save();
+  row.usedAt = new Date();
+  await row.save();
+  return { verified: true, email: user.email };
+};
+export const resendVerification = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  if (user.emailVerifiedAt) return { verified: true };
+  await issueEmailVerification(user);
+  return { sent: true };
+};
+export const requestPasswordReset = async (email) => {
+  const user = await User.findOne({ email });
+  if (!user) return { sent: true };
+  const token = randomToken();
+  await PasswordResetToken.deleteMany({ userId: user._id, usedAt: null });
+  await PasswordResetToken.create({
+    userId: user._id,
+    tokenHash: hashToken(token),
+    expiresAt: exp(env.PASSWORD_RESET_EXPIRES_MINUTES),
+  });
+  const url = `${env.CLIENT_URL}/reset-password?token=${token}`;
+  await sendEmail({
+    to: user.email,
+    subject: "Reset your Finance SaaS password",
+    text: `Reset your password: ${url}`,
+    html: `<p><a href="${url}">Reset your password</a></p>`,
+  });
+  return { sent: true };
+};
+export const resetPassword = async ({ token, password }) => {
+  const row = await PasswordResetToken.findOne({
+    tokenHash: hashToken(token),
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+  if (!row)
+    throw new AppError(
+      "Reset token is invalid or expired",
+      400,
+      "INVALID_RESET_TOKEN",
+    );
+  const user = await User.findById(row.userId).select("+password");
+  if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  user.password = await bcrypt.hash(password, 12);
+  await user.save();
+  row.usedAt = new Date();
+  await row.save();
+  return { reset: true };
+};
+export const setupMfa = async ({ userId, businessId }) => {
+  const user = await User.findOne({ _id: userId, businessId });
+  if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  let row = await MfaSecret.findOne({ userId });
+  if (!row)
+    row = await MfaSecret.create({
+      userId,
+      businessId,
+      secret: generateSecret(),
+    });
+  return {
+    secret: row.secret,
+    otpauthUrl: otpauthUrl({
+      secret: row.secret,
+      account: user.email,
+      issuer: env.MFA_ISSUER,
+    }),
+    enabled: user.mfaEnabled,
+  };
+};
+export const enableMfa = async ({ userId, code }) => {
+  const user = await User.findById(userId);
+  const row = await MfaSecret.findOne({ userId });
+  if (!user || !row)
+    throw new AppError(
+      "MFA setup has not been started",
+      400,
+      "MFA_SETUP_REQUIRED",
+    );
+  if (!verifyTotp(row.secret, code))
+    throw new AppError("Invalid MFA code", 400, "INVALID_MFA_CODE");
+  user.mfaEnabled = true;
+  await user.save();
+  row.enabledAt = new Date();
+  await row.save();
+  return { enabled: true };
+};
+export const disableMfa = async ({ userId, code }) => {
+  const user = await User.findById(userId);
+  const row = await MfaSecret.findOne({ userId });
+  if (!user || !row || !verifyTotp(row.secret, code))
+    throw new AppError("Invalid MFA code", 400, "INVALID_MFA_CODE");
+  user.mfaEnabled = false;
+  await user.save();
+  await MfaSecret.deleteOne({ userId });
+  return { enabled: false };
+};
+export const verifyMfa = async (userId, code) => {
+  const user = await User.findById(userId);
+  if (!user?.mfaEnabled) return true;
+  const row = await MfaSecret.findOne({ userId });
+  return !!row && verifyTotp(row.secret, code);
+};

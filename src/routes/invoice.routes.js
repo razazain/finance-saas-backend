@@ -24,11 +24,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Create invoice.
- *
- * Employees can create invoices.
- */
 router.post(
   "/",
   authenticate,
@@ -37,9 +32,6 @@ router.post(
   create,
 );
 
-/*
- * List invoices.
- */
 router.get(
   "/",
   authenticate,
@@ -48,9 +40,6 @@ router.get(
   list,
 );
 
-/*
- * Get invoice.
- */
 router.get(
   "/:id",
   authenticate,
@@ -59,12 +48,6 @@ router.get(
   getOne,
 );
 
-/*
- * Update draft invoice.
- *
- * Employees are allowed to edit
- * draft invoices.
- */
 router.patch(
   "/:id",
   authenticate,
@@ -73,12 +56,6 @@ router.patch(
   update,
 );
 
-/*
- * Send / cancel invoice.
- *
- * Employees cannot change invoice
- * lifecycle status.
- */
 router.patch(
   "/:id/status",
   authenticate,

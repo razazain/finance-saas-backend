@@ -57,18 +57,6 @@ const categorySchema = new mongoose.Schema(
   },
 );
 
-/*
- * Same category name can exist for
- * income and expense, but not twice
- * within the same business/type.
- *
- * Example:
- *
- * Sales + income       ✅
- * Sales + expense      ✅
- *
- * Sales + income       ❌ duplicate
- */
 categorySchema.index(
   {
     businessId: 1,
@@ -80,9 +68,6 @@ categorySchema.index(
   },
 );
 
-/*
- * Useful for category listing.
- */
 categorySchema.index({
   businessId: 1,
   type: 1,

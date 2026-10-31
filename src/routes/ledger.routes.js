@@ -12,9 +12,6 @@ import { partyLedgerSchema } from "../validators/ledger.validator.js";
 
 const router = express.Router();
 
-/*
- * Get customer/vendor ledger.
- */
 router.get(
   "/parties/:id/ledger",
 

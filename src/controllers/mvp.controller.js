@@ -73,6 +73,7 @@ export const exportTransactions = asyncHandler(async (req, res) => {
   res.set("Content-Disposition", "attachment; filename=transactions.csv");
   return res.send(body);
 });
+
 export const exportTransactionsPdf = asyncHandler(async (req, res) => {
   const rows = await Transaction.find({ businessId: req.user.businessId })
     .sort({ transactionDate: -1 })
@@ -88,6 +89,7 @@ export const exportTransactionsPdf = asyncHandler(async (req, res) => {
   res.set("Content-Disposition", "attachment; filename=transactions.pdf");
   res.send(pdf);
 });
+
 export const invoicePdf = asyncHandler(async (req, res) => {
   const i = await Invoice.findOne({
     _id: req.params.id,
@@ -114,6 +116,7 @@ export const invoicePdf = asyncHandler(async (req, res) => {
   res.set("Content-Disposition", `inline; filename=${i.invoiceNumber}.pdf`);
   res.send(pdf);
 });
+
 export const billPdf = asyncHandler(async (req, res) => {
   const b = await Bill.findOne({
     _id: req.params.id,

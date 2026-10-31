@@ -10,47 +10,21 @@ const invoiceItemSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    /*
-     * Quantity is stored as Decimal128
-     * because quantities can sometimes
-     * be fractional.
-     *
-     * Example:
-     * 1
-     * 2.5
-     * 10
-     */
     quantity: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
 
-    /*
-     * Unit price is always monetary
-     * and therefore Decimal128.
-     */
     unitPrice: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
 
-    /*
-     * Calculated by the backend:
-     *
-     * quantity × unitPrice
-     */
     amount: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
 
-    /*
-     * Optional income category.
-     *
-     * This is useful later when an
-     * invoice payment creates an
-     * income transaction.
-     */
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -78,13 +52,6 @@ const invoiceSchema = new mongoose.Schema(
       index: true,
     },
 
-    /*
-     * Human-readable invoice number.
-     *
-     * Example:
-     *
-     * INV-000001
-     */
     invoiceNumber: {
       type: String,
       required: true,
@@ -101,12 +68,6 @@ const invoiceSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * Currency comes from the business.
-     *
-     * It is never accepted from the
-     * frontend.
-     */
     currency: {
       type: String,
       required: true,
@@ -131,12 +92,6 @@ const invoiceSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * Percentage supplied by user.
-     *
-     * Example:
-     * 5 = 5%
-     */
     discountRate: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
@@ -166,10 +121,6 @@ const invoiceSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * Payment functionality will be
-     * implemented later.
-     */
     paidAmount: {
       type: mongoose.Schema.Types.Decimal128,
       required: true,
@@ -181,10 +132,6 @@ const invoiceSchema = new mongoose.Schema(
       required: true,
     },
 
-    /*
-     * Payment-related statuses will
-     * be changed by the payment module.
-     */
     status: {
       type: String,
       enum: ["draft", "sent", "partially_paid", "paid", "cancelled"],
@@ -230,10 +177,6 @@ const invoiceSchema = new mongoose.Schema(
   },
 );
 
-/*
- * Invoice number is unique inside
- * a business.
- */
 invoiceSchema.index(
   {
     businessId: 1,
@@ -244,27 +187,18 @@ invoiceSchema.index(
   },
 );
 
-/*
- * Useful for customer invoice history.
- */
 invoiceSchema.index({
   businessId: 1,
   customerId: 1,
   issueDate: -1,
 });
 
-/*
- * Useful for invoice listing.
- */
 invoiceSchema.index({
   businessId: 1,
   status: 1,
   issueDate: -1,
 });
 
-/*
- * Useful for due-date queries.
- */
 invoiceSchema.index({
   businessId: 1,
   dueDate: 1,

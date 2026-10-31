@@ -24,9 +24,6 @@ const router = express.Router();
 
 const dashboardRoles = ["owner", "admin", "employee"];
 
-/*
- * Dashboard summary.
- */
 router.get(
   "/summary",
   authenticate,
@@ -35,9 +32,6 @@ router.get(
   summary,
 );
 
-/*
- * Cash flow.
- */
 router.get(
   "/cash-flow",
   authenticate,
@@ -46,9 +40,7 @@ router.get(
   cashFlow,
 );
 
-/*
- * Category breakdown.
- */
+
 router.get(
   "/category-breakdown",
   authenticate,
@@ -57,9 +49,6 @@ router.get(
   categoryBreakdown,
 );
 
-/*
- * Account balances.
- */
 router.get(
   "/account-balances",
   authenticate,
@@ -67,9 +56,6 @@ router.get(
   accountBalances,
 );
 
-/*
- * Recent transactions.
- */
 router.get(
   "/recent-transactions",
   authenticate,

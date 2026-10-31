@@ -24,9 +24,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Create recurring rule.
- */
 router.post(
   "/",
   authenticate,
@@ -39,9 +36,6 @@ router.post(
   create,
 );
 
-/*
- * List recurring rules.
- */
 router.get(
   "/",
   authenticate,
@@ -53,9 +47,6 @@ router.get(
   list,
 );
 
-/*
- * Get one recurring rule.
- */
 router.get(
   "/:id",
   authenticate,
@@ -67,12 +58,6 @@ router.get(
   getOne,
 );
 
-/*
- * Pause / resume.
- *
- * This is an administrative action,
- * so owner/admin only.
- */
 router.patch(
   "/:id/status",
   authenticate,
@@ -84,11 +69,6 @@ router.patch(
   updateStatus,
 );
 
-/*
- * Manually execute a recurring rule.
- *
- * Employees can execute it.
- */
 router.post(
   "/:id/execute",
   authenticate,

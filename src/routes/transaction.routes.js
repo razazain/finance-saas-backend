@@ -23,11 +23,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Create transaction.
- *
- * Owner, admin and employee.
- */
 router.post(
   "/",
   authenticate,
@@ -37,9 +32,6 @@ router.post(
   create,
 );
 
-/*
- * List transactions.
- */
 router.get(
   "/",
   authenticate,
@@ -48,9 +40,6 @@ router.get(
   list,
 );
 
-/*
- * Get transaction.
- */
 router.get(
   "/:id",
   authenticate,
@@ -59,12 +48,6 @@ router.get(
   getOne,
 );
 
-/*
- * Void transaction.
- *
- * Employees cannot void financial
- * transactions.
- */
 router.patch(
   "/:id/void",
   authenticate,

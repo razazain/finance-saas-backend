@@ -1,39 +1,23 @@
-import {
-  getPartyLedger
-} from "../services/ledger.service.js";
+import { getPartyLedger } from "../services/ledger.service.js";
 
-import {
-  successResponse
-} from "../utils/response.js";
+import { successResponse } from "../utils/response.js";
 
-import {
-  asyncHandler
-} from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const getPartyLedgerController =
-  asyncHandler(
-    async (req, res) => {
-      const result =
-        await getPartyLedger({
-          businessId:
-            req.user.businessId,
+export const getPartyLedgerController = asyncHandler(async (req, res) => {
+  const result = await getPartyLedger({
+    businessId: req.user.businessId,
 
-          partyId:
-            req.validated
-              .params
-              .id,
+    partyId: req.validated.params.id,
 
-          ...req.validated.query
-        });
+    ...req.validated.query,
+  });
 
-      return successResponse({
-        res,
+  return successResponse({
+    res,
 
-        message:
-          "Party ledger retrieved successfully",
+    message: "Party ledger retrieved successfully",
 
-        data:
-          result
-      });
-    }
-  );
+    data: result,
+  });
+});

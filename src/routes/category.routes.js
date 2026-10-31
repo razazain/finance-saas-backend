@@ -24,11 +24,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Create category
- *
- * Owner and admin can create categories.
- */
 router.post(
   "/",
   authenticate,
@@ -37,11 +32,6 @@ router.post(
   create,
 );
 
-/*
- * List categories
- *
- * Employees need read access too.
- */
 router.get(
   "/",
   authenticate,
@@ -50,9 +40,7 @@ router.get(
   list,
 );
 
-/*
- * Get one category.
- */
+
 router.get(
   "/:id",
   authenticate,
@@ -61,9 +49,6 @@ router.get(
   getOne,
 );
 
-/*
- * Update category.
- */
 router.patch(
   "/:id",
   authenticate,
@@ -72,9 +57,6 @@ router.patch(
   update,
 );
 
-/*
- * Activate/deactivate category.
- */
 router.patch(
   "/:id/status",
   authenticate,

@@ -129,5 +129,10 @@ export const groqJson = async (options) => {
       "AI_INVALID_JSON",
     );
   }
-  return { data: parsed, model: result.model, usage: result.usage, id: result.id };
+  return {
+    data: parsed,
+    model: result.model,
+    usage: result.usage,
+    id: result.id,
+  };
 };

@@ -9,7 +9,15 @@ const nullableDecimal = z
   .nullable();
 
 const aiDocumentSchema = z.object({
-  classification: z.enum(["invoice", "bill", "receipt", "expense", "income", "statement", "unknown"]),
+  classification: z.enum([
+    "invoice",
+    "bill",
+    "receipt",
+    "expense",
+    "income",
+    "statement",
+    "unknown",
+  ]),
   confidence: z.number().min(0).max(1),
   fields: z.object({
     invoiceNumber: nullableText,
@@ -25,14 +33,16 @@ const aiDocumentSchema = z.object({
     paidAmount: nullableDecimal,
     dueAmount: nullableDecimal,
   }),
-  lineItems: z.array(
-    z.object({
-      description: z.string().trim().min(1).max(500),
-      quantity: nullableDecimal,
-      unitPrice: nullableDecimal,
-      amount: nullableDecimal,
-    }),
-  ).max(50),
+  lineItems: z
+    .array(
+      z.object({
+        description: z.string().trim().min(1).max(500),
+        quantity: nullableDecimal,
+        unitPrice: nullableDecimal,
+        amount: nullableDecimal,
+      }),
+    )
+    .max(50),
 });
 
 const cleanOcrText = (value) =>
@@ -47,7 +57,8 @@ const normalizeDate = (value) => {
   if (iso) {
     const dateOnly = `${iso[1]}-${iso[2]}-${iso[3]}`;
     const checked = new Date(`${dateOnly}T00:00:00.000Z`);
-    return !Number.isNaN(checked.getTime()) && checked.toISOString().slice(0, 10) === dateOnly
+    return !Number.isNaN(checked.getTime()) &&
+      checked.toISOString().slice(0, 10) === dateOnly
       ? dateOnly
       : null;
   }
@@ -58,7 +69,9 @@ const normalizeDate = (value) => {
 
 const normalizeMoney = (value) => {
   if (value === null || value === undefined) return null;
-  const cleaned = String(value).replace(/,/g, "").replace(/[^0-9.\-]/g, "");
+  const cleaned = String(value)
+    .replace(/,/g, "")
+    .replace(/[^0-9.\-]/g, "");
   if (!/^\d+(\.\d{1,4})?$/.test(cleaned)) return null;
   return cleaned;
 };
@@ -74,7 +87,11 @@ export const extractDocumentFieldsWithAi = async ({
 
   const text = cleanOcrText(rawText);
   if (!text.trim()) {
-    throw new AppError("No OCR text is available for AI extraction", 400, "OCR_TEXT_EMPTY");
+    throw new AppError(
+      "No OCR text is available for AI extraction",
+      400,
+      "OCR_TEXT_EMPTY",
+    );
   }
 
   const response = await groqJson({
@@ -101,7 +118,8 @@ export const extractDocumentFieldsWithAi = async ({
           expectedDocumentType: expectedDocumentType || "other",
           ocrText: text,
           requiredJsonShape: {
-            classification: "invoice|bill|receipt|expense|income|statement|unknown",
+            classification:
+              "invoice|bill|receipt|expense|income|statement|unknown",
             confidence: "number from 0 to 1",
             fields: {
               invoiceNumber: "string|null",
@@ -133,7 +151,11 @@ export const extractDocumentFieldsWithAi = async ({
 
   const parsed = aiDocumentSchema.safeParse(response.data);
   if (!parsed.success) {
-    throw new AppError("AI document extraction did not match the expected format", 502, "AI_EXTRACTION_INVALID");
+    throw new AppError(
+      "AI document extraction did not match the expected format",
+      502,
+      "AI_EXTRACTION_INVALID",
+    );
   }
 
   const data = parsed.data;

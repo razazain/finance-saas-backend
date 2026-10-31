@@ -24,11 +24,6 @@ import {
 
 const router = express.Router();
 
-/*
- * Create account
- *
- * Owner and admin.
- */
 router.post(
   "/",
   authenticate,
@@ -37,12 +32,6 @@ router.post(
   create,
 );
 
-/*
- * List accounts
- *
- * All authenticated business users
- * can view accounts.
- */
 router.get(
   "/",
   authenticate,
@@ -51,9 +40,6 @@ router.get(
   list,
 );
 
-/*
- * Get account.
- */
 router.get(
   "/:id",
   authenticate,
@@ -62,9 +48,7 @@ router.get(
   getOne,
 );
 
-/*
- * Update account metadata.
- */
+
 router.patch(
   "/:id",
   authenticate,
@@ -73,9 +57,7 @@ router.patch(
   update,
 );
 
-/*
- * Activate/deactivate account.
- */
+
 router.patch(
   "/:id/status",
   authenticate,
